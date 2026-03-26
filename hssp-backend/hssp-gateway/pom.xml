@@ -11,7 +11,18 @@
 
     <artifactId>hssp-gateway</artifactId>
     
-    <!-- Placeholder for future gateway implementation -->
     <dependencies>
+        <!-- Spring Cloud Gateway -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
+        </dependency>
+        <!-- Nacos Discovery (保留给未来微服务切换时解除注释) -->
+        <!--
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+        -->
     </dependencies>
 </project>

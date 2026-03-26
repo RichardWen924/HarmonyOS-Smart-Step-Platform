@@ -11,7 +11,11 @@
 
     <artifactId>hssp-feign-api</artifactId>
     
-    <!-- Placeholder for future feign clients -->
     <dependencies>
+        <!-- Spring Cloud OpenFeign -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
     </dependencies>
 </project>
