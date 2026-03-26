@@ -1,7 +1,7 @@
 # HSSP (HarmonyOS & Smart Step Platform)
 
 ## 项目结构说明
-仓库地址：https://github.com/RichardWen924/HarmonyOS-Smart-Step-Platform.git
+
 在根目录下包含以下核心工程及目录：
 
 - **/hssp-backend** (后端父工程)：基于 Maven 多模块管理
