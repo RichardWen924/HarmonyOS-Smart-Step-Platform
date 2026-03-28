@@ -1,0 +1,4 @@
+hssp:
+  db:
+    host: localhost
+    pw:
