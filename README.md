@@ -1,9 +1,6 @@
 # HSSP (HarmonyOS & Smart Step Platform)
 
 ## 项目结构说明
-
-为了避免后续 5 人协作时再出现此问题，建议在你的 README.md 协作规范中加入这一条：
-
 ⚠️ 开发前置准备
 请所有成员执行以下命令，确保 GitHub 能正确统计你的贡献值：
 git config --global user.email "你的GitHub绑定邮箱"
@@ -20,15 +17,56 @@ git config --global user.name "你的GitHub用户名"
 - **/hssp-harmony-app**：鸿蒙移动端文件夹（技术栈：ArkTS + ArkUI）
 - **/hssp-docs**：存放开发文档及设计说明文件
 
-## 5 人协作分工指引
+## 团队协作分工指引 (5人组合)
 
-团队成员请在各自负责的独立文件夹内进行开发和提交：
+当前项目由 5 名开发人员协作完成（2名前端 + 3名后端）。为避免互相干扰，请严格根据职责划分工作区：
 
-- **一人**：维护 `/hssp-backend/hssp-parent` 和 `/hssp-backend/hssp-common`。作为技术底座支撑，提供局域网环境测试并公布接口地址。
-- **一人**：在 `/hssp-backend/hssp-service` 中编写业务的 Controller 和 Service 等逻辑。
-- **一人**：在 `/hssp-backend/hssp-model` 中定义各种实体对象，并在 `/hssp-docs` 维护相应的接口文档和设计图。
-- **一人**：在 `/hssp-web-admin` 文件夹内进行 Vue 的前端开发。联调时将 `baseUrl` 指向组长提供的机器局域网 IP。
-- **一人**：在 `/hssp-harmony-app` 内进行鸿蒙原生应用的开发，通过真机或模拟器连接并调试组长机器上的 IP 接口。
+- **前端开发人员 x 2**：
+  - 一人专职负责鸿蒙客户端开发：`/hssp-harmony-app`
+  - 一人专职负责 Web 管理端开发：`/hssp-web-admin`
+
+---
+
+### 后端开发协作划分 (3名后端人员)
+
+由于当前业务均集中在 `/hssp-backend/hssp-service` 单体结构中，3 名后端开发需遵循 Controller/Service 包级隔离。团队共同维护 `hssp-common` (公共组件) 和 `hssp-model` (实体类/DTO)。
+
+- **后端开发人员 A (管理端接口)**
+  - **职责**：负责所有的管理端业务后端接口（如数据统计、商品审批、内容管理等），并负责与 Web 管理端前端联调。
+  - **开发区域**：`/hssp-backend/hssp-service` 内的 Admin 相关业务切片（相关的 `Controller`、`Service`、`Mapper`等）。
+
+- **后端开发人员 B (注册登录与用户中心)**
+  - **职责**：负责系统账号注册、登录、鉴权（JWT/Security），及个人中心（如我的收藏、我的数据）接口服务。
+  - **开发区域**：`/hssp-backend/hssp-service` 内 Auth、User 相关的包，及负责配置拦截器鉴权代码；需配合双端前端连调。
+
+- **后端开发人员 C (商城与排行榜基建)**
+  - **职责**：负责高并发业务板块如商城（商品展示、购买流水）及基于 Redis 实现的实时积分/热度排行榜。
+  - **开发区域**：`/hssp-backend/hssp-service` 内 Mall、Rank 相关的包；主导项目内各项缓存策略的落地。
+
+---
+
+## 预留：Redis 连接配置区 (排行榜及商城缓存基建)
+
+供主要负责**开发者 C** 及团队统一接入 Redis 缓存时使用。所有中间件连接配置集中在此处统一管理防冲突：
+
+- 📍 **配置文件路径**：`/hssp-backend/hssp-service/src/main/resources/application.yml`
+
+**推荐的 Redis 配置模板结构** (团队联调时请在服务器上使用隔离的 database 或统一服务 IP)：
+```yaml
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1} # 组内联调时，请修改为内网提供 Redis 服务的统一机器 IP
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0 # 建议不同环境使用不同 db
+      lettuce:
+        pool:
+          max-active: 8 # 最大连接数
+          max-wait: -1ms # 连接池最大阻塞等待时间
+          max-idle: 8
+          min-idle: 0
+```
 
 ## 局域网联调指南
 
