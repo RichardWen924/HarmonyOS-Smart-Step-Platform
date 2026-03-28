@@ -12,6 +12,29 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: ${hssp.db.pw}
+  data:
+    redis:
+      host: ${hssp.redis.host}
+      port: 6379
+      database: 0
+      lettuce:
+        pool:
+          max-active: 8 # 最大连接数
+  mail:
+    host: smtp.qq.com # 邮箱服务器地址
+    username: ${hssp.qq.username}@qq.com # 你的邮箱
+    password: ${hssp.qq.code} # “授权码”
+    port: 465
+    protocol: smtp
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          ssl:
+            enable: true
 
 mybatis-plus:
   type-enums-package: com.hssp.common.admin

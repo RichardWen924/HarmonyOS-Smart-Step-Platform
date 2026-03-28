@@ -26,6 +26,16 @@
             <artifactId>mybatis-plus-boot-starter</artifactId>
             <version>3.5.15</version>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>3.5.15</version>
+            <scope>compile</scope>
+        </dependency>
         <!-- Swagger, etc. can be added later -->
     </dependencies>
 </project>

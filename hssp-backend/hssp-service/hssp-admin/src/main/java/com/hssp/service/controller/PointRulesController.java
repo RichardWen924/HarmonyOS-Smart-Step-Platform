@@ -1,6 +1,7 @@
 package com.hssp.service.controller;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hssp.common.admin.PointRules_Status;
 import com.hssp.model.admin.dto.IdsDto;
 import com.hssp.model.admin.dto.PointRulesDto;
@@ -77,6 +78,19 @@ public class PointRulesController {
             pointRulesService.removeBatchByIds(idsDto.getIds());
         }
         return Result.success();
+    }
+
+    /**
+     * 分页查询
+     * @param current
+     * @param size
+     * @return
+     */
+    @GetMapping("/page")
+    public Result queryByPage(@RequestParam(defaultValue = "1") Integer current,
+                              @RequestParam(defaultValue = "2") Integer size) {
+        Page<PointRules> page = new Page<>(current, size);
+        return Result.success(pointRulesService.page(page));
     }
 
 }
