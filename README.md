@@ -2,6 +2,12 @@
 
 ## 项目结构说明
 
+为了避免后续 5 人协作时再出现此问题，建议在你的 README.md 协作规范中加入这一条：
+
+⚠️ 开发前置准备
+请所有成员执行以下命令，确保 GitHub 能正确统计你的贡献值：
+git config --global user.email "你的GitHub绑定邮箱"
+git config --global user.name "你的GitHub用户名"
 在根目录下包含以下核心工程及目录：
 
 - **/hssp-backend** (后端父工程)：基于 Maven 多模块管理
