@@ -9,15 +9,15 @@
     </parent>
 
     <groupId>com.hssp.service</groupId>
-    <artifactId>hssp-admin</artifactId>
+    <artifactId>hssp-mall</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>hssp-admin</name>
-    <description>hssp-admin</description>
+    <name>hssp-mall</name>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -25,20 +25,12 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-        </dependency>
-
-        <!--数据库-->
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-        </dependency>
-
-        <!--mybatis-plus-->
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus</artifactId>
         </dependency>
     </dependencies>
 
@@ -50,5 +42,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
