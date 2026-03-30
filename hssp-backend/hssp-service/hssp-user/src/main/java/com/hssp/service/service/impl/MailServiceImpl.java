@@ -29,7 +29,7 @@ public class MailServiceImpl implements MailService {
 
     @Override
     public void sendCode(String to) {
-        // 1. 生成 6 位随机数TODO
+        // 1. 生成 6 位随机数TODO为了调试方便，固定为123456
 //        String code = String.valueOf((int) ((Math.random() * 9 + 1) * 100000));
 
         String code="123456";
@@ -41,11 +41,11 @@ public class MailServiceImpl implements MailService {
         message.setText("您的验证码为：" + code + "，有效期 5 分钟。请勿泄露。");
 
         try {
-            // 3. 发送邮件（这是一个耗时操作）
+            // 3. 发送邮件（这是一个耗时操作）TODO 发送到QQ邮箱
 //            mailSender.send(message);
             log.info("sendCode: {}", code);
             // 4. 存入 Redis
-            redisTemplate.opsForValue().set(CODE_PREFIX + to, code, 100, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(CODE_PREFIX + to, code, 5, TimeUnit.MINUTES);
 
         } catch (Exception e) {
             throw new BusinessException("邮件发送失败：" + e.getMessage());

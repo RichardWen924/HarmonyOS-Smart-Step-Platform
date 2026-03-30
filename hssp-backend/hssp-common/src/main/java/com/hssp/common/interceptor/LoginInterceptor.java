@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 public class LoginInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        log.info("拦截请求:{}",request.getRequestURI());
         // 1. 从 Header 获取 Token
         String token = request.getHeader("Authorization");
         log.info("token:{}",token);
@@ -28,6 +29,7 @@ public class LoginInterceptor implements HandlerInterceptor {
             log.info("用户登录userId: {}", UserContext.getUserId());
             return true;
         } catch (Exception e) {
+            log.error("Token验证失败", e);
             throw new BusinessException("Token验证失败", 401);
         }
     }

@@ -1,46 +1,128 @@
 package com.hssp.service.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.hssp.model.admin.dto.LoginDto;
+import com.hssp.common.exception.BusinessException;
+import com.hssp.common.utils.JwtUtils;
 import com.hssp.model.admin.dto.RegisterDto;
+import com.hssp.model.admin.po.Admin;
+import com.hssp.model.admin.dto.LoginDto;
 import com.hssp.model.admin.po.Admin;
 import com.hssp.service.mapper.AdminMapper;
 import com.hssp.service.service.AdminService;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class AdminServiceImpl extends ServiceImpl<AdminMapper,Admin> implements AdminService {
 
-    @Autowired
-    private RedisTemplate<String, Object> redisTemplate;
+
+    private static final String CODE_PREFIX = "EMAIL_CODE:";
+    private static final String DEFAULT_PASSWORD = "123456";
+    private final RedisTemplate<String, Object> redisTemplate;
+    // 注入加密工具
+    private final PasswordEncoder passwordEncoder;
 
     @Override
-    public Boolean register(RegisterDto registerDto) {
-        String email = registerDto.getEmail();
-        String verification = registerDto.getVerification();
-
-        String redisKey = "EMAIL_CODE:" + email;
-        Object code = redisTemplate.opsForValue().get(redisKey);
-
-        if (code.toString().equals(verification)) {
-            Admin admin = new Admin();
-            admin.setEmail(email);
-            // TODO 优化密码
-            admin.setPassword("123456");
-            // TODO 优化用户名
-            admin.setUsername("123456");
-            // TODO 图片
-            //admin.setAvatar();
-            admin.setCreateTime(LocalDateTime.now());
-            admin.setUpdateTime(LocalDateTime.now());
-            this.save(admin);
-            return true;
+    public void register(RegisterDto registerDto) {
+        boolean exist = lambdaQuery()
+                .eq(Admin::getEmail, registerDto.getEmail())
+                .one() != null;
+        if (exist) {
+            throw new BusinessException("邮箱已存在");
         }
-        return false;
+        String cacheVerification = Objects.requireNonNull(redisTemplate.opsForValue().get(CODE_PREFIX + registerDto.getEmail())).toString();
+        log.info("cacheVerification: {}", cacheVerification);
+        if (!cacheVerification.equals(registerDto.getVerification())) {
+            throw new BusinessException("验证码错误");
+        } else {
+            // 注册用户
+            Admin admin = new Admin();
+            admin.setEmail(registerDto.getEmail());
+            admin.setUsername(registerDto.getEmail());
+            // 密码加密
+            //明文
+            String rawPassword=DEFAULT_PASSWORD;
+            //加密
+            String encodedPassword = passwordEncoder.encode(rawPassword);
+
+            log.info("加密密码{}", encodedPassword);
+
+            admin.setPassword(encodedPassword);
+            save(admin);
+            redisTemplate.delete(CODE_PREFIX + registerDto.getEmail());
+        }
+    }
+
+    @Override
+    public String login(LoginDto loginDto) {
+        String Username = loginDto.getUsername();
+        String password = loginDto.getPassword();
+        String email = loginDto.getEmail();
+        String verification = loginDto.getVerification();
+        //验证码不为空，即选择了邮箱加验证码的登录方式
+        if(verification!=null){
+            if(email==null){
+                throw new BusinessException("邮箱不能为空");
+            }
+            log.info("邮箱+验证码登录");
+            String cacheVerification = Objects.requireNonNull(redisTemplate.opsForValue().get(CODE_PREFIX + email)).toString();
+            if(!cacheVerification.equals(verification)){
+                throw new BusinessException("验证码错误");
+            }
+            Admin admin=lambdaQuery()
+                    .eq(Admin::getEmail, email)
+                    .one();
+            if(admin==null){
+                throw new BusinessException("邮箱不存在");
+            }
+            // 登录成功，生成令牌
+            String token= JwtUtils.createToken(admin.getId());
+            return token;
+        }
+        //验证码为空，即选择了用户名/邮箱加密码的登录方式
+        else{
+            if(Username!=null){
+                String encodePassword = passwordEncoder.encode(password);
+                log.info("用户名+密码登录");
+                Admin admin=lambdaQuery()
+                        .eq(Admin::getUsername, Username)
+                        .one();
+                boolean rightPassword=passwordEncoder.matches(password, admin.getPassword());
+                if(!rightPassword){
+                    throw new BusinessException("用户名或密码错误");
+                }
+                // 登录成功，生成令牌
+                String token= JwtUtils.createToken(admin.getId());
+                return token;
+            }
+            else if(email!=null){
+                String encodePassword = passwordEncoder.encode(password);
+                log.info("邮箱+密码登录");
+                Admin admin=lambdaQuery()
+                        .eq(Admin::getEmail, email)
+                        .one();
+                boolean rightPassword=passwordEncoder.matches(password, admin.getPassword());
+                if(!rightPassword){
+                    throw new BusinessException("用户名或密码错误");
+                }
+                // 登录成功，生成令牌
+                String token= JwtUtils.createToken(admin.getId());
+                return token;
+            }
+            else{
+                throw new BusinessException("用户名/邮箱不能为空");
+            }
+
+        }
     }
 }

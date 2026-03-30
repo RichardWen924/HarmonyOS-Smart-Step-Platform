@@ -11,6 +11,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new LoginInterceptor())
                 .addPathPatterns("/**")
-                .excludePathPatterns("/user/login", "/user/register", "/user/send-verification");
+                .excludePathPatterns("/user/login",
+                        "/user/register",
+                        "/user/send-verification",
+                        "/admin/login",
+                        "/admin/register",
+                        "/admin/send-verification",
+                        "/error");
     }
 }

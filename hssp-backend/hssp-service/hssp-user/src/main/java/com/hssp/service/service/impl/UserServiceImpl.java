@@ -1,6 +1,7 @@
 package com.hssp.service.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.hssp.common.context.UserContext;
 import com.hssp.common.exception.BusinessException;
 import com.hssp.common.utils.JwtUtils;
 import com.hssp.model.user.dto.ChangeInfoDto;
@@ -129,13 +130,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
     @Override
     public void update(ChangeInfoDto changeInfoDto) {
+        Long userId= UserContext.getUserId();
         boolean exist = lambdaQuery()
-                .eq(User::getId, changeInfoDto.getId())
+                .eq(User::getId, userId)
                 .one() != null;
         if(!exist){
             throw new BusinessException("用户不存在");
         }
         User user=new User();
+        user.setId(userId);
         BeanUtils.copyProperties(changeInfoDto,user);
         updateById(user);
     }
@@ -143,20 +146,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Override
     public void updatePassword(ChangePasswordDto changePasswordDto) {
         String encodePassword = passwordEncoder.encode(changePasswordDto.getOldPassword());
+        Long userId= UserContext.getUserId();
         User user=lambdaQuery()
-                .eq(User::getId, changePasswordDto.getId())
+                .eq(User::getId, userId)
                 .one();
         if(!passwordEncoder.matches(changePasswordDto.getOldPassword(), user.getPassword())){
             throw new BusinessException("旧密码错误");
         }
+        user.setId(userId);
         user.setPassword(encodePassword);
         updateById(user);
     }
 
     @Override
     public Integer getPoints() {
-        //TODO threadLocal获取用户id
-        Long userId=2038513477319036930L;
+        Long userId= UserContext.getUserId();
         Integer points=lambdaQuery()
                 .eq(User::getId, userId)
                 .one()
