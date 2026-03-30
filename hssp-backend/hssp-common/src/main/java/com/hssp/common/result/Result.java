@@ -1,4 +1,4 @@
-package com.hssp.model.admin.po;
+package com.hssp.common.result;
 
 import lombok.Data;
 
@@ -21,6 +21,15 @@ public class Result {
         result.data = object;
         result.code = 1;
         result.msg = "success";
+        return result;
+    }
+
+
+    public static Result success(String msg,Object data){
+        Result result =  new Result();
+        result.msg = msg;
+        result.code = 1;
+        result.data = data;
         return result;
     }
 

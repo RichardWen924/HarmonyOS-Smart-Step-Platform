@@ -1,0 +1,5 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.hssp.common.exception.GlobalExceptionHandler,\
+com.hssp.common.config.PasswordConfig,\
+com.hssp.common.config.SecurityConfig,\
+com.hssp.common.config.WebMvcConfig

@@ -7,7 +7,7 @@ import com.hssp.model.admin.dto.IdsDto;
 import com.hssp.model.admin.dto.PointRulesDto;
 
 import com.hssp.model.admin.po.PointRules;
-import com.hssp.model.admin.po.Result;
+import com.hssp.common.result.Result;
 import com.hssp.service.service.PointRulesService;
 
 import org.springframework.beans.factory.annotation.Autowired;

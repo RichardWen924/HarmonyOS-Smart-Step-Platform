@@ -6,7 +6,7 @@ USE step_counter_db;
 CREATE TABLE `user` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键 ID',
     `username` VARCHAR(50) NOT NULL COMMENT '用户名/账号',
-    `password` VARCHAR(50) NOT NULL DEFAULT '123456' COMMENT '密码',
+    `password` VARCHAR(100) NOT NULL DEFAULT '123456' COMMENT '密码',
     `email` VARCHAR(50) DEFAULT NULL COMMENT '邮箱地址',
     `nickname` VARCHAR(50) DEFAULT NULL COMMENT '昵称',
     `sex` SMALLINT DEFAULT 1 COMMENT '性别 (1：男 2：女)',
@@ -26,7 +26,7 @@ CREATE TABLE `user` (
 CREATE TABLE `admin` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键 ID',
     `username` VARCHAR(50) NOT NULL COMMENT '用户名/账号',
-    `password` VARCHAR(50) NOT NULL DEFAULT '123456' COMMENT '密码',
+    `password` VARCHAR(100) NOT NULL DEFAULT '123456' COMMENT '密码',
     `email` VARCHAR(50) DEFAULT NULL COMMENT '邮箱地址',
     `nickname` VARCHAR(50) DEFAULT NULL COMMENT '昵称',
     `sex` SMALLINT DEFAULT 1 COMMENT '性别 (1：男 2：女)',

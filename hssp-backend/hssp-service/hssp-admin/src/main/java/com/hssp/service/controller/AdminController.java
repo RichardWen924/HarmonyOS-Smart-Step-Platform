@@ -2,7 +2,7 @@ package com.hssp.service.controller;
 
 import com.hssp.model.admin.dto.RegisterDto;
 import com.hssp.model.admin.dto.SendVerificationDto;
-import com.hssp.model.admin.po.Result;
+import com.hssp.common.result.Result;
 import com.hssp.service.service.AdminService;
 import com.hssp.service.service.MailService;
 import org.springframework.beans.factory.annotation.Autowired;
