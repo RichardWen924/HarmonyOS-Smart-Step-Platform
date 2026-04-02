@@ -3,7 +3,7 @@ package com.hssp.service.mall.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hssp.model.mall.po.MallGoods;
 import com.hssp.model.mall.po.MallOrder;
-import com.hssp.model.user.po.UserPoints;
+import com.hssp.model.mall.po.UserPoints;
 import com.hssp.service.mall.mapper.MallGoodsMapper;
 import com.hssp.service.mall.mapper.MallOrderMapper;
 import com.hssp.service.mall.mapper.UserPointsMapper;

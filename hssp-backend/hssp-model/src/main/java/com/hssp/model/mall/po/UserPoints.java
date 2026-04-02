@@ -1,4 +1,4 @@
-package com.hssp.model.user.po;
+package com.hssp.model.mall.po;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
