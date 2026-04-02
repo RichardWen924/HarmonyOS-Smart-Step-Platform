@@ -36,7 +36,15 @@ public class LoginInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        // 2. 从 Header 获取 Token
+        // 2. 检查网关透传的 UserID
+        String gatewayUserId = request.getHeader("user-id");
+        if (StringUtils.hasText(gatewayUserId)) {
+            log.info("🔓 从网关获取校验后的 userId: {}", gatewayUserId);
+            UserContext.setUserId(Long.valueOf(gatewayUserId));
+            return true;
+        }
+
+        // 3. 兜底逻辑：从 Header 获取 Token (方便直连微服务的测试)
         String token = request.getHeader("Authorization");
         log.info("token:{}",token);
         if (!StringUtils.hasText(token)) {
