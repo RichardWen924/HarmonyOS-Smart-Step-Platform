@@ -5,4 +5,29 @@ spring:
     name: hssp-gateway
   cloud:
     gateway:
-      routes: [] # TODO: 微服务切分后，在此配置具体路由
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+      routes:
+        # 管理后台微服务
+        - id: hssp-admin-route
+          uri: http://localhost:8081
+          predicates:
+            - Path=/admin/**
+
+        # 用户与排行榜微服务
+        - id: hssp-user-route
+          uri: http://localhost:8082
+          predicates:
+            - Path=/user/**
+
+        # 商城中心微服务 (包含商品、积分、订单)
+        - id: hssp-mall-route
+          uri: http://localhost:8083
+          predicates:
+            - Path=/mall/**
+          filters:
+            - StripPrefix=1 # 移除 /mall 前缀再转发，例如 /mall/goods/list -> /goods/list

@@ -10,14 +10,33 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>hssp-gateway</artifactId>
-    
+
     <dependencies>
         <!-- Spring Cloud Gateway -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway</artifactId>
         </dependency>
-        <!-- Nacos Discovery (保留给未来微服务切换时解除注释) -->
+
+        <!-- HSSP Common (Exclude Web for Gateway compatibility) -->
+        <dependency>
+            <groupId>com.hssp</groupId>
+            <artifactId>hssp-common</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-web</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.32</version>
+        </dependency>
+
+        <!-- Nacos Discovery (Reserved for future microservices) -->
         <!--
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
