@@ -1,0 +1,15 @@
+{
+  "name": "entry",
+  "version": "1.0.0",
+  "description": "鸿蒙运动步数统计系统",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@ohos/hypium": "1.0.25",
+    "@ohos/hilog": "1.0.7",
+    "@ohos/http": "1.0.3",
+    "@ohos/data-preferences": "1.0.4",
+    "@ohos/sensor": "1.0.3"
+  }
+}
