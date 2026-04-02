@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: hssp-admin
+  cloud:
+    nacos:
+      server-addr: ${SPRING_CLOUD_NACOS_SERVER-ADDR}
+      namespace: ${SPRING_CLOUD_NACOS_NAMESPACE}
+      discovery:
+        server-addr: ${spring.cloud.nacos.server-addr}
+        namespace: ${spring.cloud.nacos.namespace}
+      config:
+        server-addr: ${spring.cloud.nacos.server-addr}
+        namespace: ${spring.cloud.nacos.namespace}
+        file-extension: yaml
+        shared-configs:
+          - data-id: shared-jdbc.yaml
+            refresh: true
+          - data-id: shared-redis.yaml
+            refresh: true
+          - data-id: shared-mybatisplus.yaml
+            refresh: true
+          - data-id: shared-mail.yaml
+            refresh: true
+

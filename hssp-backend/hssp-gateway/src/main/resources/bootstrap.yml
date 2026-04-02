@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: hssp-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${SPRING_CLOUD_NACOS_SERVER-ADDR}
+        namespace: ${SPRING_CLOUD_NACOS_NAMESPACE}

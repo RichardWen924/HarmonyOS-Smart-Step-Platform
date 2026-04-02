@@ -1,42 +1,16 @@
 server:
   port: 8081
-  address: localhost
+  # address: localhost
 
-spring:
-  application:
-    name: hssp-admin
-  profiles:
-    active: dev
-  datasource:
-    url: jdbc:mysql://${hssp.db.host}:3306/step_counter_db
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
-    password: ${hssp.db.pw}
+hssp:
+  db:
+    host: ${HSSP_DB_HOST}
+    pw: ${HSSP_DB_PASSWORD}
   redis:
-    host: ${hssp.redis.host}
-    port: 6379
-    password: ${hssp.redis.pw}
-    database: 0
-    lettuce:
-      pool:
-        max-active: 8 # 最大连接数
-  mail:
-    host: smtp.qq.com # 邮箱服务器地址
-    username: ${hssp.qq.username}@qq.com # 你的邮箱
-    password: ${hssp.qq.code} # “授权码”
-    port: 465
-    protocol: smtp
-    default-encoding: UTF-8
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-          ssl:
-            enable: true
+    host: ${HSSP_REDIS_HOST}
+    port: ${HSSP_REDIS_PORT}
+  qq:
+    username: ${HSSP_QQ_USERNAME}
+    code: ${HSSP_QQ_CODE}
 
-mybatis-plus:
-  type-enums-package: com.hssp.common.admin
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+

@@ -1,8 +1,20 @@
 server:
   port: 8080
+
 spring:
-  application:
-    name: hssp-gateway
   cloud:
     gateway:
-      routes: [] # TODO: 微服务切分后，在此配置具体路由
+      discovery:
+        locator:
+          enabled: true
+      routes:  # TODO: 微服务切分后，在此配置具体路由
+        # 管理端
+        - id: hssp-admin
+          uri: lb://hssp-admin
+          predicates:
+            - Path=/admin/**
+        # 用户端
+        - id: hssp-user
+          uri: lb://hssp-user
+          predicates:
+            - Path=/user/**
