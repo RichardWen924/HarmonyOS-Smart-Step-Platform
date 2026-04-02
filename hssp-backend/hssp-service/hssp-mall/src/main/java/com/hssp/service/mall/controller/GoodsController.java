@@ -1,0 +1,31 @@
+package com.hssp.service.mall.controller;
+
+import com.hssp.common.result.Result;
+import com.hssp.model.mall.po.MallGoods;
+import com.hssp.service.mall.service.MallGoodsService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/goods")
+public class GoodsController {
+
+    @Autowired
+    private MallGoodsService mallGoodsService;
+
+    @GetMapping("/list")
+    public Result list() {
+        List<MallGoods> goodsList = mallGoodsService.list();
+        return Result.success(goodsList);
+    }
+
+    @GetMapping("/refresh")
+    public Result refresh() {
+        mallGoodsService.refreshGoodsCache();
+        return Result.success("刷新缓存成功", mallGoodsService.list());
+    }
+}
