@@ -23,6 +23,7 @@ spring:
 
 server:
   port: 8083 # 商城服务独立端口
+  address: 0.0.0.0
 
 mybatis-plus:
   # 只扫实体 PO，避开各模块下 DTO 的同名冲突 (如 LoginDto)

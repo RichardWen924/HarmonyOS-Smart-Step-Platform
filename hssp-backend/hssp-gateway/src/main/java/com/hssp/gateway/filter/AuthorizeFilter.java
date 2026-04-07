@@ -37,6 +37,11 @@ public class AuthorizeFilter implements GlobalFilter, Ordered {
         String path = request.getURI().getPath();
         log.info("Gateway 拦截请求: {}", path);
 
+        // 0. 放行 OPTIONS 预检请求（解决 CORS 问题）
+        if (request.getMethod() != null && "OPTIONS".equalsIgnoreCase(request.getMethod().name())) {
+            return chain.filter(exchange);
+        }
+
         // 1. 白名单放行
         for (String whitePath : WHITELIST) {
             if (path.contains(whitePath)) {

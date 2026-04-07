@@ -1,5 +1,6 @@
 server:
   port: 8080
+  address: 0.0.0.0
 spring:
   application:
     name: hssp-gateway
@@ -9,8 +10,17 @@ spring:
         cors-configurations:
           '[/**]':
             allowedOrigins: "*"
-            allowedMethods: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
             allowedHeaders: "*"
+            exposedHeaders:
+              - Authorization
+              - Content-Disposition
+            maxAge: 3600
       routes:
         # 管理后台微服务
         - id: hssp-admin-route
