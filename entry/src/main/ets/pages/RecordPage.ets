@@ -17,7 +17,7 @@ export struct RecordPage {
   @State selectedFilter: string = 'all' // all, points, steps
   @State isLoading: boolean = true
   
-  private apiClient = ApiClient.getInstance()
+  private apiClient = ApiClient
 
   aboutToAppear() {
     this.loadExchangeRecords()

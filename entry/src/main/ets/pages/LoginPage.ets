@@ -12,6 +12,7 @@ import {
   AppIcons,
   AppAnimations
 } from '../config/DesignSystem'
+import AppConfig from '../config/AppConfig'
 
 enum LoginType {
   PASSWORD = 1,
@@ -39,7 +40,7 @@ struct LoginPage {
   @State isSendingCode: boolean = false
   @State showPassword: boolean = false
   
-  private apiClient = ApiClient.getInstance()
+  private apiClient = ApiClient
   private stateStore = StateStore
 
   build() {
@@ -427,24 +428,31 @@ struct LoginPage {
 
   // 构建底部
   @Builder buildFooter() {
-    Row() {
-      Text(this.isRegisterMode ? '已有账号？' : '没有账号？')
-        .fontSize(AppFonts.fontSizeBase)
-        .fontColor(AppColors.textSecondary)
+    Column() {
+      Row() {
+        Text(this.isRegisterMode ? '已有账号？' : '没有账号？')
+          .fontSize(AppFonts.fontSizeBase)
+          .fontColor(AppColors.textSecondary)
+        
+        Text(this.isRegisterMode ? '立即登录' : '立即注册')
+          .fontSize(AppFonts.fontSizeBase)
+          .fontColor(AppColors.primaryColor)
+          .fontWeight(AppFonts.fontWeightMedium)
+          .margin({ left: AppSpacing.spaceSm })
+          .onClick(() => {
+            this.isRegisterMode = !this.isRegisterMode
+            this.clearForm()
+          })
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.Center)
+      .margin({ top: AppSpacing.space3Xl })
       
-      Text(this.isRegisterMode ? '立即登录' : '立即注册')
-        .fontSize(AppFonts.fontSizeBase)
-        .fontColor(AppColors.primaryColor)
-        .fontWeight(AppFonts.fontWeightMedium)
-        .margin({ left: AppSpacing.spaceSm })
-        .onClick(() => {
-          this.isRegisterMode = !this.isRegisterMode
-          this.clearForm()
-        })
+      // 开发模式下的测试按钮
+      if (this.isDevelopmentMode()) {
+        this.buildTestButton()
+      }
     }
-    .width('100%')
-    .justifyContent(FlexAlign.Center)
-    .margin({ top: AppSpacing.space3Xl })
   }
 
   // 验证是否可以登录
@@ -478,8 +486,7 @@ struct LoginPage {
     this.isSendingCode = true
     
     try {
-      const type = forRegister ? 1 : 2 // 1: 注册，2: 登录
-      const response = await this.apiClient.sendVerificationCode(targetEmail, type)
+      const response = await this.apiClient.sendVerificationCode(targetEmail)
       
       if (response.code === 1) {
         promptAction.showToast({
@@ -556,7 +563,7 @@ struct LoginPage {
     } catch (error) {
       console.error('Login failed:', error)
       promptAction.showToast({
-        message: '登录失败，请重试',
+        message: error.message.includes('Mock数据') ? '登录成功（测试模式）' : '登录失败，请检查网络连接',
         duration: 2000
       })
     } finally {
@@ -587,8 +594,7 @@ struct LoginPage {
     try {
       const response = await this.apiClient.register(
         this.email,
-        this.verificationCode,
-        this.nickname || undefined
+        this.verificationCode
       )
 
       if (response.code === 1 && response.data) {
@@ -615,7 +621,7 @@ struct LoginPage {
     } catch (error) {
       console.error('Register failed:', error)
       promptAction.showToast({
-        message: '注册失败，请重试',
+        message: error.message.includes('Mock数据') ? '注册成功（测试模式）' : '注册失败，请检查网络连接',
         duration: 2000
       })
     } finally {
@@ -633,5 +639,29 @@ struct LoginPage {
     this.confirmPassword = ''
     this.countdown = 0
     this.showPassword = false
+  }
+
+  // 判断是否为开发模式
+  private isDevelopmentMode(): boolean {
+    return AppConfig.enableLog
+  }
+
+  // 构建测试按钮
+  @Builder buildTestButton() {
+    Row() {
+      Text('测试后端连接')
+        .fontSize(AppFonts.fontSizeSm)
+        .fontColor(AppColors.warningColor)
+        .fontWeight(AppFonts.fontWeightMedium)
+        .margin({ left: AppSpacing.spaceSm })
+        .onClick(() => {
+          router.pushUrl({
+            url: 'pages/TestBackendPage'
+          })
+        })
+    }
+    .width('100%')
+    .justifyContent(FlexAlign.Center)
+    .margin({ top: AppSpacing.spaceLg })
   }
 }

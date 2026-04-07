@@ -31,7 +31,7 @@ struct MainPage {
   @State userInfo: UserInfo | null = null
   
   private stateStore = StateStore
-  private apiClient = ApiClient.getInstance()
+  private apiClient = ApiClient
 
   aboutToAppear() {
     this.loadUserData()
@@ -216,12 +216,12 @@ struct MainPage {
       this.totalPoints = userInfo.totalPoints
       
       // 从服务器获取最新积分
-      const pointsData = await this.apiClient.getUserPoints()
-      if (pointsData.code === 1) {
-        this.totalPoints = pointsData.data.totalPoints
+      const userInfoResponse = await this.apiClient.getUserInfo()
+      if (userInfoResponse.code === 1) {
+        this.totalPoints = userInfoResponse.data.totalPoints
         await this.stateStore.updatePoints(
-          pointsData.data.totalPoints,
-          pointsData.data.remainingSteps
+          userInfoResponse.data.totalPoints,
+          userInfoResponse.data.remainingSteps
         )
       }
     } catch (error) {
@@ -238,7 +238,7 @@ struct HomePage {
   @State showManualInputDialog: boolean = false
   @State manualInputValue: string = ''
   private stateStore = StateStore
-  private apiClient = ApiClient.getInstance()
+  private apiClient = ApiClient
 
   aboutToAppear() {
     this.loadStepData()

@@ -11,9 +11,9 @@ import {
 import AppShadows from '../config/AppShadows'
 
 enum PeriodType {
-  DAY = 'day',
-  WEEK = 'week',
-  MONTH = 'month'
+  DAY = 'daily',
+  WEEK = 'weekly',
+  MONTH = 'monthly'
 }
 
 @Entry
@@ -27,7 +27,7 @@ struct RankingPage {
   @State total: number = 0
   @State isLoading: boolean = false
   
-  private apiClient = ApiClient.getInstance()
+  private apiClient = ApiClient
   private pageSize: number = 10
 
   aboutToAppear() {
@@ -332,27 +332,14 @@ struct RankingPage {
     this.isLoading = true
     
     try {
-      const response = await this.apiClient.getRankings(
-        this.currentPeriod,
-        this.currentPage,
-        this.pageSize
+      const response = await this.apiClient.getRankingList(
+        this.currentPeriod
       )
       
       if (response.code === 1) {
-        const pageData: PageData<UserInfo> = response.data
-        // 将UserInfo转换为RankingItem
-        this.rankings = pageData.list.map((userInfo: UserInfo, index: number) => {
-          const rankingItem: RankingItem = {
-            rank: (this.currentPage - 1) * this.pageSize + index + 1,
-            userId: userInfo.id,
-            username: userInfo.username,
-            nickname: userInfo.nickname,
-            totalSteps: userInfo.totalSteps,
-            avatar: userInfo.avatar
-          }
-          return rankingItem
-        })
-        this.total = pageData.total
+        // getRankingList返回的是RankingItem[]，不是PageData<UserInfo>
+        this.rankings = response.data
+        this.total = response.data.length
         
         // 模拟用户排名（实际应从接口返回）
         this.userRank = Math.floor(Math.random() * 100) + 1
@@ -393,27 +380,23 @@ struct RankingPage {
     this.isLoading = true
     
     try {
-      const response = await this.apiClient.getRankings(
-        this.currentPeriod,
-        this.currentPage,
-        this.pageSize
+      const response = await this.apiClient.getRankingList(
+        this.currentPeriod
       )
       
       if (response.code === 1) {
-        const pageData: PageData<UserInfo> = response.data
-        // 将UserInfo转换为RankingItem
-        const newRankings = pageData.list.map((userInfo: UserInfo, index: number) => {
-          const rankingItem: RankingItem = {
+        // getRankingList返回的是RankingItem[]，不是PageData<UserInfo>
+        const newRankings = response.data.map((item: RankingItem, index: number) => {
+          return {
             rank: (this.currentPage - 1) * this.pageSize + index + 1,
-            userId: userInfo.id,
-            username: userInfo.username,
-            nickname: userInfo.nickname,
-            totalSteps: userInfo.totalSteps,
-            avatar: userInfo.avatar
-          }
-          return rankingItem
+            userId: item.userId,
+            username: item.username,
+            nickname: item.nickname,
+            totalSteps: item.totalSteps,
+            avatar: item.avatar
+          } as RankingItem
         })
-        this.rankings = [...this.rankings, ...newRankings]
+        this.rankings = this.rankings.concat(newRankings)
       }
     } catch (error) {
       console.error('Failed to load more rankings:', error)

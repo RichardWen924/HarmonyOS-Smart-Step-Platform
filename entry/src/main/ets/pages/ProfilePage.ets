@@ -26,7 +26,7 @@ struct ProfilePage {
   @State confirmPassword: string = ''
   
   private stateStore = StateStore
-  private apiClient = ApiClient.getInstance()
+  private apiClient = ApiClient
 
   aboutToAppear() {
     this.loadUserInfo()

@@ -7,55 +7,58 @@
  * 3. 开发环境和生产环境可以使用不同的配置
  */
 
-export const AppConfig = {
-  // API 基础地址
-  baseUrl: 'http://localhost:3000/api',
+class AppConfigImpl {
+  // API 基础地址 - 连接到Spring Boot后端
+  baseUrl: string = 'http://192.168.59.116:8082'
   
   // 请求超时时间（毫秒）
-  timeout: 10000,
+  timeout: number = 10000
   
   // 最大重试次数
-  maxRetries: 3,
+  maxRetries: number = 3
   
   // 重试延迟（毫秒）
-  retryDelay: 1000,
+  retryDelay: number = 1000
   
   // Token 存储键名
-  tokenKey: 'smart_step_token',
+  tokenKey: string = 'smart_step_token'
   
   // 用户信息存储键名
-  userKey: 'smart_step_user',
+  userKey: string = 'smart_step_user'
   
   // 步数存储键名
-  stepKey: 'smart_step_data',
+  stepKey: string = 'smart_step_data'
   
   // 自动同步步数的时间（小时，24 小时制）
-  autoSyncHour: 22,
+  autoSyncHour: number = 22
   
   // 每日步数目标
-  dailyStepGoal: 10000,
+  dailyStepGoal: number = 10000
   
   // 积分兑换比例（步数：积分）
-  exchangeRate: 100, // 100 步 = 1 积分
+  exchangeRate: number = 100 // 100 步 = 1 积分
   
   // 每日最大兑换步数
-  maxDailyExchange: 10000,
+  maxDailyExchange: number = 10000
   
   // 是否启用日志
-  enableLog: true,
+  enableLog: boolean = true
   
-  // 是否启用 Mock 数据（开发阶段）
-  enableMock: true,
+  // 是否启用 Mock 数据（开发阶段）- 已关闭，使用真实后端
+  enableMock: boolean = false
   
   // 版本号
-  version: '1.0.0',
+  version: string = '1.0.0'
   
   // 应用名称
-  appName: '智能计步器',
+  appName: string = '智能计步器'
   
   // 最小支持的版本号
-  minVersion: '1.0.0'
+  minVersion: string = '1.0.0'
 }
+
+// 创建配置实例
+export const AppConfig = new AppConfigImpl()
 
 // 导出默认配置
 export default AppConfig

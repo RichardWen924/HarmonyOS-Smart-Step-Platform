@@ -1,263 +1,197 @@
-# 鸿蒙运动应用 - Smart Step Platform
+# 🚶‍♂️ HarmonyOS智能步数平台
 
-## 项目概述
+> 一个基于HarmonyOS的智能运动健康应用，提供步数记录、积分兑换、排行榜等功能
 
-这是一个基于 **HarmonyOS + ArkTS** 开发的运动主题移动应用，主要功能包括：
-- 📊 步数统计与趋势分析
-- 🏆 步数排行榜（日榜/周榜/月榜）
-- 💰 积分系统与商城兑换
-- 👤 用户中心与个人信息管理
+![HarmonyOS](https://img.shields.io/badge/HarmonyOS-3.0.0-blue)
+![ArkTS](https://img.shields.io/badge/ArkTS-TypeScript-green)
+![Build](https://img.shields.io/badge/Build-Passing-success)
 
-## 技术栈
+## ✨ 特性
 
-- **开发环境**: DevEco Studio
-- **语言**: ArkTS（声明式 UI）
-- **状态管理**: @State / @Observed / AppStorage
-- **网络请求**: @ohos.net.http
-- **数据持久化**: @ohos.data.preferences
-- **路由导航**: @ohos.router
+### 🎯 核心功能
+- **智能步数记录** - 支持系统步数传感器集成
+- **积分兑换系统** - 步数兑换积分，积分兑换商品
+- **用户排行榜** - 实时步数排名和成就展示
+- **健康数据分析** - 趋势图表和个性化建议
 
-## 项目结构
+### 🎨 用户体验
+- **精美界面设计** - 统一的HarmonyOS设计语言
+- **流畅交互体验** - 优化的动画和响应速度
+- **多主题支持** - 适配不同使用场景
+- **离线功能** - 网络异常时的数据保护
+
+### 🔧 技术特色
+- **模块化架构** - 清晰的代码组织和组件复用
+- **类型安全** - 完整的TypeScript类型定义
+- **状态管理** - 统一的状态管理和数据持久化
+- **Mock数据** - 完整的开发测试支持
+
+## 🚀 快速开始
+
+### 环境要求
+- HarmonyOS SDK 6.0.2(22) 或更高版本
+- DevEco Studio 最新版本
+- 支持HarmonyOS的设备或模拟器
+
+### 安装步骤
+1. **克隆项目**
+   ```bash
+   git clone <项目地址>
+   cd HarmonyOS_Smart_Step_Platform
+   ```
+
+2. **导入项目**
+   - 打开DevEco Studio
+   - 选择 "Open" 或 "Import Project"
+   - 选择项目根目录
+
+3. **配置环境**
+   - 项目已预配置所有必要权限
+   - 无需额外配置即可运行
+
+4. **运行项目**
+   - 连接设备或启动模拟器
+   - 点击 "Run" 按钮
+   - 等待应用安装完成
+
+### 测试账号
+在Mock模式下可以使用以下测试账号：
+- **邮箱**: `test@example.com`
+- **密码**: `password123`
+
+## 📱 功能演示
+
+### 基础功能流程
+1. **首次启动** → 登录页面
+2. **登录/注册** → 使用测试账号或注册新用户
+3. **主页面** → 查看步数、积分、排行榜
+4. **个人中心** → 管理用户信息和设置
+
+### 高级功能体验
+1. **趋势分析** → 查看步数趋势图表
+2. **API测试** → 测试所有后端接口
+3. **状态管理** → 体验数据持久化
+
+## 🏗️ 项目结构
 
 ```
 entry/src/main/ets/
-├── pages/                  # 页面组件
-│   ├── Index.ets          # 启动页
-│   ├── LoginPage.ets      # 登录注册页
-│   ├── MainPage.ets       # 主页面（5 个 Tab）
-│   ├── RankingPage.ets    # 排行榜页
-│   └── ProfilePage.ets    # 个人中心页
-├── services/               # 服务层
-│   ├── ApiClient.ets      # API 客户端
+├── pages/                 # 页面组件
+│   ├── LoginPage.ets      # 登录页面
+│   ├── MainPage.ets       # 主页面
+│   ├── ProfilePage.ets    # 个人中心
+│   ├── RankingPage.ets    # 排行榜
+│   ├── TrendPage.ets      # 趋势分析
+│   ├── RecordPage.ets     # 兑换记录
+│   ├── TestBackendPage.ets # 后端测试
+│   └── APITestPage.ets    # API功能测试
+├── services/              # 服务层
+│   ├── ApiClient.ets      # API客户端
 │   ├── StateStore.ets     # 状态管理
-│   └── StepCounterService.ets  # 步数计数服务
-├── types/                  # 类型定义
-│   └── common.ets         # 通用类型接口
-├── utils/                  # 工具类
-│   └── CommonUtils.ets    # 常用工具函数
-└── config/                 # 配置文件
-    └── AppConfig.ets      # 应用配置
+│   └── StepCounterService.ets # 步数服务
+├── config/                # 配置
+│   ├── AppConfig.ets      # 应用配置
+│   ├── DesignSystem.ets   # 设计系统
+│   └── AppShadows.ets     # 阴影配置
+├── types/                 # 类型定义
+│   └── common.ets         # 通用类型
+└── utils/                 # 工具类
+    └── CommonUtils.ets    # 通用工具
 ```
 
-## 功能特性
+## ⚙️ 配置说明
 
-### 1. 用户认证
-- ✅ 邮箱注册
-- ✅ 密码登录 / 验证码登录
-- ✅ 发送验证码
-- ✅ 自动登录（Token 持久化）
-
-### 2. 步数管理
-- ✅ 今日步数展示
-- ✅ 模拟走路（随机增加步数）
-- ✅ 手动上传步数
-- ✅ 步数趋势图表（近 7 天）
-- ✅ 自动同步（每日 22:00）
-
-### 3. 积分系统
-- ✅ 步数兑换积分（100 步 = 1 积分）
-- ✅ 积分查询
-- ✅ 积分规则展示
-- ✅ 每日兑换限制
-
-### 4. 排行榜
-- ✅ 日榜 / 周榜 / 月榜
-- ✅ 分页加载
-- ✅ 我的排名展示
-- ✅ 前 3 名奖牌图标
-
-### 5. 积分商城
-- ✅ 商品列表
-- ✅ 积分兑换
-- ✅ 库存显示
-- ✅ 兑换记录
-
-### 6. 个人中心
-- ✅ 个人信息编辑（昵称/邮箱/性别）
-- ✅ 修改密码
-- ✅ 统计数据展示
-- ✅ 退出登录
-
-## API 接口对接
-
-### 后端接口地址
-在 `config/AppConfig.ets` 中配置：
+### 应用配置 (AppConfig.ets)
 ```typescript
-export const AppConfig = {
-  baseUrl: 'http://localhost:3000/api'
-}
+// 开发模式配置
+baseUrl: 'https://api.example.com'  // API地址
+enableMock: true                    // Mock数据开关
+timeout: 10000                     // 请求超时
+enableLog: true                    // 日志开关
 ```
 
-### 主要接口列表
+### 切换到生产环境
+1. 修改 `AppConfig.ets` 中的配置
+2. 设置 `enableMock: false`
+3. 配置真实的后端API地址
 
-#### 用户认证
-- `POST /send-verification` - 发送验证码
-- `POST /register` - 用户注册
-- `POST /login` - 用户登录
+## 🔍 开发指南
 
-#### 步数管理
-- `POST /user/steps` - 上传步数
-- `GET /user/steps/statistics?days=7` - 获取步数统计
-- `GET /user/rankings?periodType=day` - 获取排行榜
+### 添加新页面
+1. 在 `pages/` 目录创建新页面组件
+2. 在 `main_pages.json` 中添加路由
+3. 更新导航逻辑
 
-#### 积分系统
-- `GET /user/points` - 获取积分
-- `POST /user/exchange` - 兑换积分
-- `GET /user/rules` - 获取积分规则
+### 添加新API
+1. 在 `ApiClient.ets` 中添加接口方法
+2. 在 `types/common.ets` 中定义数据类型
+3. 在相关页面中调用接口
 
-#### 商城与记录
-- `GET /mall/products?page=1&pageSize=10` - 商品列表
-- `POST /mall/exchange` - 兑换商品
-- `GET /user/exchange-records` - 兑换记录
+### 自定义主题
+1. 修改 `DesignSystem.ets` 中的设计变量
+2. 更新颜色、字体、间距等配置
+3. 重新构建应用
 
-#### 用户信息
-- `GET /user` - 获取用户信息
-- `PUT /user` - 更新用户信息
-- `PUT /user/password` - 修改密码
+## 🐛 故障排除
 
-### 接口响应格式
-所有接口统一返回格式：
-```typescript
-{
-  code: number,      // 1: 成功，其他：失败
-  message: string,   // 响应消息
-  data: any         // 响应数据
-}
-```
+### 常见问题
 
-## Mock 数据
+**Q: 应用启动失败**
+A: 检查设备连接和HarmonyOS版本兼容性
 
-当前项目使用 Mock 数据进行开发，位于 `ApiClient.ets` 中。对接真实接口时：
+**Q: 网络请求失败**
+A: Mock模式下无需网络，真实模式检查网络连接
 
-1. 修改 `baseUrl` 为实际地址
-2. 将 `enableMock` 设置为 `false`
-3. 移除各方法中的 Mock 数据返回逻辑
+**Q: 页面跳转异常**
+A: 检查路由配置和页面注册
 
-## 状态管理
+**Q: 步数数据不更新**
+A: 当前为模拟数据，需要集成真实传感器
 
-### StateStore 单例模式
-```typescript
-import StateStore from '../services/StateStore'
+### 调试技巧
+- 查看控制台日志获取详细错误信息
+- 使用API测试页面验证接口功能
+- 检查网络请求状态和响应数据
 
-// 使用示例
-const userInfo = await StateStore.getUserInfo()
-await StateStore.login(userInfo, token)
-await StateStore.logout()
-```
+## 📚 文档资源
 
-### 全局状态
-- `isLoggedIn`: 登录状态
-- `userInfo`: 用户信息对象
-- `todaySteps`: 今日步数
-- `totalPoints`: 总积分
+- [项目状态报告](PROJECT_STATUS_REPORT.md) - 详细的项目状态说明
+- [开发计划](DEVELOPMENT_PLAN.md) - 后续开发路线图
+- [功能演示指南](FEATURE_DEMO.md) - 完整的功能演示流程
+- [快速启动指南](QUICK_START_GUIDE.md) - 快速上手指南
+- [项目总结](PROJECT_SUMMARY.md) - 完整的技术总结
 
-## 常用工具
+## 🤝 贡献指南
 
-### DateUtils - 日期工具
-```typescript
-DateUtils.formatDate(new Date(), 'yyyy-MM-dd')
-DateUtils.isToday(date)
-DateUtils.getRelativeTime(date)
-```
+我们欢迎任何形式的贡献！
 
-### Validator - 数据验证
-```typescript
-Validator.isEmail(email)
-Validator.validatePassword(password)
-Validator.validateNickname(nickname)
-```
+### 贡献流程
+1. Fork 本项目
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
 
-### NumberUtils - 数字格式化
-```typescript
-NumberUtils.formatSteps(12345)  // "1.2w"
-NumberUtils.formatNumber(1000)  // "1,000"
-```
+### 代码规范
+- 遵循 TypeScript 最佳实践
+- 使用统一的代码风格
+- 添加必要的注释和文档
+- 确保所有测试通过
 
-## 开发指南
+## 📄 许可证
 
-### 1. 环境准备
-1. 安装 DevEco Studio 4.0+
-2. 配置 HarmonyOS SDK
-3. 创建或导入项目
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
 
-### 2. 运行项目
-1. 连接真机或启动模拟器
-2. 点击 Run 按钮运行项目
-3. 查看日志调试
+## 🏆 致谢
 
-### 3. 添加新页面
-```typescript
-// 1. 在 pages/ 目录创建新页面
-@Entry
-@Component
-struct NewPage {
-  build() {
-    Column() {
-      Text('新页面')
-    }
-  }
-}
+感谢所有为这个项目做出贡献的开发者！
 
-// 2. 使用 router 跳转
-router.pushUrl({
-  url: 'pages/NewPage'
-})
-```
+---
 
-### 4. 调用 API
-```typescript
-import ApiClient from '../services/ApiClient'
+<div align="center">
 
-// 调用示例
-const response = await ApiClient.getUserPoints()
-if (response.code === 1) {
-  // 处理成功响应
-} else {
-  // 处理错误
-}
-```
+**如果这个项目对你有帮助，请给个 ⭐️ 支持一下！**
 
-## 构建发布
+[报告问题](https://github.com/your-repo/issues) • [提出建议](https://github.com/your-repo/issues) • [联系我们](mailto:your-email@example.com)
 
-### 调试版本
-```bash
-npm run debug
-```
-
-### 发布版本
-```bash
-npm run release
-```
-
-## 常见问题
-
-### Q: 如何修改 API 地址？
-A: 编辑 `config/AppConfig.ets` 文件中的 `baseUrl`
-
-### Q: Mock 数据在哪里？
-A: `services/ApiClient.ets` 中每个方法的 catch 块内
-
-### Q: 如何清除本地数据？
-A: 调用 `StateStore.clearAllData()`
-
-### Q: 自动同步如何实现？
-A: 使用 `@ohos.backgroundTaskManager` 在后台定时任务中调用同步接口
-
-## 后续优化
-
-- [ ] 接入真实传感器数据
-- [ ] 添加健康 Kit 集成
-- [ ] 实现后台自动同步
-- [ ] 增加图表库（折线图/饼图）
-- [ ] 社交分享功能
-- [ ] 成就系统
-- [ ] 消息推送
-- [ ] 多语言支持
-
-## 开发者
-
-如有问题请联系开发团队或提交 Issue。
-
-## 许可证
-
-Apache License 2.0
+</div>

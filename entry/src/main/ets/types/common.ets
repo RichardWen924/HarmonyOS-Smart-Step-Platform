@@ -73,10 +73,10 @@ export interface ApiResponse<T> {
 
 // 登录请求
 export interface LoginRequest {
-  account: string; // 邮箱/用户名
+  username?: string; // 用户名（可选）
+  email?: string;    // 邮箱（可选）
   password?: string;
-  verificationCode?: string;
-  loginType: number; // 1: 密码登录，2: 验证码登录
+  verification?: string; // 验证码（可选）
 }
 
 // 登录响应类
@@ -95,15 +95,12 @@ export class LoginResponse {
 // 注册请求
 export interface RegisterRequest {
   email: string;
-  password: string;
-  verificationCode: string;
-  nickname?: string;
+  verification: string;
 }
 
 // 验证码请求
 export interface VerificationRequest {
   email: string;
-  type: number; // 1: 注册，2: 登录，3: 找回密码
 }
 
 // 步数上传请求接口
