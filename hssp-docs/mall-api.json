@@ -1,0 +1,209 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "商城模块接口",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/goods/list": {
+      "get": {
+        "summary": "查询商品列表",
+        "description": "查询所有可兑换的商品列表",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "goodsName": {
+                            "type": "string"
+                          },
+                          "requiredPoints": {
+                            "type": "number"
+                          },
+                          "coverUrl": {
+                            "type": "string"
+                          },
+                          "displayNum": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/goods/refresh": {
+      "get": {
+        "summary": "手动刷新商品列表缓存",
+        "description": "强制删除商品列表的Redis缓存，并同步最新数据返回",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "goodsName": {
+                            "type": "string"
+                          },
+                          "requiredPoints": {
+                            "type": "number"
+                          },
+                          "coverUrl": {
+                            "type": "string"
+                          },
+                          "displayNum": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/points/exchange": {
+      "post": {
+        "summary": "步数兑换积分",
+        "description": "将步数按 1000:1 转换成积分并添加到用户账户",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "steps": {
+                    "type": "number",
+                    "description": "本次兑换的步数"
+                  }
+                },
+                "required": ["steps"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "兑换成功"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/order/exchange": {
+      "post": {
+        "summary": "商品兑换",
+        "description": "使用积分兑换商品，生成订单记录",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "goodsId": {
+                    "type": "string",
+                    "description": "兑换的商品ID"
+                  }
+                },
+                "required": ["goodsId"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "兑换成功"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

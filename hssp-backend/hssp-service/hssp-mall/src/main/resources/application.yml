@@ -1,8 +1,4 @@
 spring:
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-      - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
   profiles:
     active: dev
   application:
@@ -27,9 +23,10 @@ spring:
 
 server:
   port: 8083 # 商城服务独立端口
+  address: 0.0.0.0
 
 mybatis-plus:
-  # 关闭自动扫描别名 → 彻底解决 LoginDto / RegisterDto 冲突
-  type-aliases-package:
+  # 只扫实体 PO，避开各模块下 DTO 的同名冲突 (如 LoginDto)
+  type-aliases-package: com.hssp.model.**.po
   # 关闭 MyBatis 检查
   check-config-location: false

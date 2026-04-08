@@ -1,7 +1,10 @@
 package com.hssp.service.controller;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.hssp.common.result.Result;
 import com.hssp.model.user.dto.*;
+import com.hssp.model.user.po.User;
+import com.hssp.model.user.vo.UserVo;
 import com.hssp.service.service.IUserService;
 import com.hssp.service.service.MailService;
 import com.hssp.service.service.impl.MailServiceImpl;
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotNull;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -64,4 +68,19 @@ public class UserController {
     public Result getPoints() {
         return Result.success(userService.getPoints());
     }
+
+    @GetMapping()
+    public Result list() {
+        List<User> users = userService.list();
+        List<UserVo> userVos = BeanUtil.copyToList(users, UserVo.class);
+        return Result.success(userVos);
+    }
+
+    @GetMapping("/{id}")
+    public Result list(@PathVariable Long id) {
+        User user = userService.getById(id);
+        UserVo userVo = BeanUtil.copyProperties(user, UserVo.class);
+        return Result.success(userVo);
+    }
+
 }
