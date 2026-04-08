@@ -7,3 +7,4 @@ node_modules/
 # 忽略个人本地配置文件
 **/application-dev.yml
 .env
+.env
