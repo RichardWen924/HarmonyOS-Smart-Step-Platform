@@ -51,6 +51,12 @@ public class AuthorizeFilter implements GlobalFilter, Ordered {
 
         // 2. 获取 Token
         String token = request.getHeaders().getFirst("Authorization");
+        
+        // 如果存在 "Bearer " 前缀，需要去除
+        if (StringUtils.hasText(token) && token.startsWith("Bearer ")) {
+            token = token.substring(7); // 去除 "Bearer " 前缀（7个字符）
+        }
+        
         if (!StringUtils.hasText(token)) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return response.setComplete();
@@ -59,14 +65,20 @@ public class AuthorizeFilter implements GlobalFilter, Ordered {
         try {
             // 3. 校验 Token
             Claims claims = JwtUtils.parseToken(token);
-            String userId = String.valueOf(claims.get("userId"));
+            String userId = claims.getSubject(); // 从 subject 中获取 userId
+            
+            if (!StringUtils.hasText(userId)) {
+                log.error("Token中subject为空");
+                response.setStatusCode(HttpStatus.UNAUTHORIZED);
+                return response.setComplete();
+            }
 
             // 4. 将 userId 注入 Header，传递给下游微服务
             ServerHttpRequest mutatedRequest = request.mutate()
                     .header("user-id", userId)
                     .build();
 
-            log.info("Token 校验通过，userId: {}", userId);
+            log.info("✅ Token 校验通过，userId: {}", userId);
 
             // 5. 放行
             return chain.filter(exchange.mutate().request(mutatedRequest).build());

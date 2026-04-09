@@ -5,6 +5,9 @@ spring:
   application:
     name: hssp-gateway
   cloud:
+    nacos:
+      discovery:
+        enabled: false # 禁用 Nacos 服务注册
     gateway:
       globalcors:
         cors-configurations:

@@ -18,7 +18,7 @@ public class LoginInterceptor implements HandlerInterceptor {
      * 1: 开启校验 (开启安全验证)
      * 0: 关闭校验 (直接跳过验证，使用 Mock 数据)
      */
-    private static final int JWT_SWITCH = 0;
+    private static final int JWT_SWITCH = 1;
 
     /**
      * 关闭 JWT 校验时使用的 Mock 用户 ID
@@ -46,15 +46,27 @@ public class LoginInterceptor implements HandlerInterceptor {
 
         // 3. 兜底逻辑：从 Header 获取 Token (方便直连微服务的测试)
         String token = request.getHeader("Authorization");
-        log.info("token:{}",token);
+        log.info("原始token:{}",token);
+        
+        // 如果存在 "Bearer " 前缀，需要去除
+        if (StringUtils.hasText(token) && token.startsWith("Bearer ")) {
+            token = token.substring(7); // 去除 "Bearer " 前缀（7个字符）
+            log.info("去除Bearer前缀后的token:{}",token);
+        }
+        
         if (!StringUtils.hasText(token)) {
             throw new BusinessException("未登录", 401);
         }
         try {
             // 2. 解析 Token
             Claims claims = JwtUtils.parseToken(token);
-            // 3. 将用户信息存入 ThreadLocal，方便后续 Service 获取当前登录人
-            UserContext.setUserId(Long.valueOf(claims.get("userId").toString()));
+            // 3. 从 subject 中获取 userId (与 JwtUtils.createToken 保持一致)
+            String subject = claims.getSubject();
+            if (!StringUtils.hasText(subject)) {
+                log.error("Token中subject为空");
+                throw new BusinessException("Token格式错误", 401);
+            }
+            UserContext.setUserId(Long.valueOf(subject));
             log.info("用户登录userId: {}", UserContext.getUserId());
             return true;
         } catch (io.jsonwebtoken.ExpiredJwtException e) {

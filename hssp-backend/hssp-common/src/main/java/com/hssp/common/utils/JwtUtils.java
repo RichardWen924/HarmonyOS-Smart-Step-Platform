@@ -31,8 +31,7 @@ public class JwtUtils {
      */
     public static String createToken(Long userId) {
         return Jwts.builder()
-                .setSubject("USER_INFO")
-                .claim("userId", userId)
+                .setSubject(userId.toString())  // 将userId作为subject
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
