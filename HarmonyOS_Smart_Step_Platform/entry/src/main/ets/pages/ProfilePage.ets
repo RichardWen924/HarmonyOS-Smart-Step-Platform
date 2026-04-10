@@ -33,8 +33,14 @@ struct ProfilePage {
     // 确保ApiClient有正确的Token
     const hasToken = await this.syncTokenToApiClient()
     if (hasToken) {
-      this.loadUserInfo()
+      await this.loadUserInfo()
     }
+  }
+  
+  // 页面显示时刷新数据（从其他页面返回时）
+  onPageShow() {
+    console.log('ProfilePage: onPageShow called')
+    this.loadUserInfo()
   }
 
   build() {
@@ -62,6 +68,10 @@ struct ProfilePage {
         }
         .scrollable(ScrollDirection.Vertical)
         .layoutWeight(1)
+        .onReachEnd(() => {
+          // 滚动到底部时可以触发刷新
+          console.log('Reached end of scroll')
+        })
       }
       .width('100%')
       .height('100%')
@@ -624,57 +634,50 @@ struct ProfilePage {
 
   // 加载用户信息
   private async loadUserInfo(): Promise<void> {
+    console.log('ProfilePage: Loading user info...')
     this.isLoading = true
     
     try {
       // 确保ApiClient有正确的Token
       await this.syncTokenToApiClient()
       
-      console.log('=== 开始获取用户信息 ===')
       // 先从API获取最新用户信息
       const apiResponse = await this.apiClient.getUserInfo()
-      console.log('API响应:', JSON.stringify(apiResponse))
+      console.log('ProfilePage: API response:', JSON.stringify(apiResponse))
       
       if (apiResponse.code === 1 && apiResponse.data) {
-        console.log('✅ 从API获取用户信息成功')
-        console.log('用户ID:', apiResponse.data.id)
-        console.log('用户名:', apiResponse.data.username)
-        console.log('昵称:', apiResponse.data.nickname)
-        
         // 更新本地存储
         await this.stateStore.saveUserInfo(apiResponse.data)
         this.userInfo = apiResponse.data
-        this.editNickname = apiResponse.data.nickname || ''
+        this.editNickname = apiResponse.data.nickname
         this.editEmail = apiResponse.data.email || ''
         this.editSex = apiResponse.data.sex || 0
+        console.log('ProfilePage: User info loaded successfully:', this.userInfo)
       } else {
-        console.warn('⚠️ API返回失败, code:', apiResponse.code, 'message:', apiResponse.message)
+        console.warn('ProfilePage: API returned error or no data')
         // API失败时从本地存储加载
         const userInfo = await this.stateStore.getUserInfo()
         if (userInfo) {
-          console.log('✅ 从本地存储加载用户信息')
           this.userInfo = userInfo
-          this.editNickname = userInfo.nickname || ''
+          this.editNickname = userInfo.nickname
           this.editEmail = userInfo.email || ''
           this.editSex = userInfo.sex || 0
         } else {
-          console.error('❌ 本地也没有用户信息')
+          console.warn('No user info found in local storage')
         }
       }
     } catch (error) {
-      console.error('❌ Failed to load user info from API:', error)
-      console.error('错误详情:', JSON.stringify(error))
+      console.error('Failed to load user info from API:', error)
       // 出错时从本地存储加载
       try {
         const userInfo = await this.stateStore.getUserInfo()
         if (userInfo) {
-          console.log('✅ 从本地存储加载用户信息(API失败)')
           this.userInfo = userInfo
-          this.editNickname = userInfo.nickname || ''
+          this.editNickname = userInfo.nickname
           this.editEmail = userInfo.email || ''
           this.editSex = userInfo.sex || 0
         } else {
-          console.error('❌ 本地也没有用户信息，需要重新登录')
+          console.warn('No user info found in local storage')
           // 如果本地也没有用户信息，可能是token过期，需要重新登录
           promptAction.showToast({
             message: '用户信息获取失败，请重新登录',
@@ -687,7 +690,7 @@ struct ProfilePage {
           }, 2000)
         }
       } catch (localError) {
-        console.error('❌ Failed to load local user info:', localError)
+        console.error('Failed to load local user info:', localError)
         promptAction.showToast({
           message: '加载用户信息失败',
           duration: 2000
@@ -695,7 +698,7 @@ struct ProfilePage {
       }
     } finally {
       this.isLoading = false
-      console.log('=== 用户信息加载完成 ===')
+      console.log('ProfilePage: Loading finished')
     }
   }
 

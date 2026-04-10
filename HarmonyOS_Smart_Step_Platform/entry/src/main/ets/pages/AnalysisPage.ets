@@ -1,4 +1,4 @@
-﻿import router from '@ohos.router'
+import router from '@ohos.router'
 import promptAction from '@ohos.promptAction'
 import ApiClient from '../services/ApiClient'
 import StateStore from '../services/StateStore'
@@ -15,7 +15,7 @@ import AppShadows from '../config/AppShadows'
 
 @Entry
 @Component
-export struct TrendPage {
+export struct AnalysisPage {
   @State stepRecords: StepRecord[] = []
   @State totalSteps: number = 0
   @State avgSteps: number = 0
@@ -24,6 +24,7 @@ export struct TrendPage {
   @State isLoading: boolean = true
   @State chartData: number[] = []
   @State chartLabels: string[] = []
+  @State currentTab: string = 'trend' // trend, statistics, comparison
 
   private apiClient = ApiClient
   private stateStore = StateStore
@@ -36,19 +37,22 @@ export struct TrendPage {
 
   build() {
     Column() {
-      // 顶部筛选器
-      this.buildFilterHeader()
+      // 顶部标题栏
+      this.buildHeader()
+
+      // Tab切换
+      this.buildTabSelector()
 
       Scroll() {
         Column() {
-          // 统计概览
-          this.buildStatisticsOverview()
-
-          // 步数趋势图 - 使用曲线图
-          this.buildStepChart()
-
-          // 详细数据列表
-          this.buildDataList()
+          // 根据当前Tab显示不同内容
+          if (this.currentTab === 'trend') {
+            this.buildTrendAnalysis()
+          } else if (this.currentTab === 'statistics') {
+            this.buildStatisticsAnalysis()
+          } else if (this.currentTab === 'comparison') {
+            this.buildComparisonAnalysis()
+          }
         }
         .width('100%')
         .padding(AppSpacing.spaceLg)
@@ -61,15 +65,25 @@ export struct TrendPage {
     .backgroundColor(AppColors.bgColor)
   }
 
-  @Builder buildFilterHeader() {
+  @Builder buildHeader() {
     Row() {
-      Text('步数趋势分析')
-        .fontSize(AppFonts.fontSize2Xl)
-        .fontColor(AppColors.titleColor)
-        .fontWeight(AppFonts.fontWeightBold)
+      Row() {
+        Text('🔙')
+          .fontSize(AppFonts.fontSize2Xl)
+          .onClick(() => {
+            router.back()
+          })
+          .margin({ right: AppSpacing.spaceLg })
+
+        Text('数据分析')
+          .fontSize(AppFonts.fontSize2Xl)
+          .fontColor(AppColors.titleColor)
+          .fontWeight(AppFonts.fontWeightBold)
+      }
 
       Blank()
 
+      // 周期选择
       Row() {
         Button('近7天')
           .fontSize(AppFonts.fontSizeSm)
@@ -98,6 +112,67 @@ export struct TrendPage {
     .padding({ left: AppSpacing.space3Xl, right: AppSpacing.space3Xl, top: AppSpacing.spaceLg, bottom: AppSpacing.spaceLg })
     .backgroundColor(AppColors.bgCard)
     .shadow(AppShadows.shadowSm)
+  }
+
+  @Builder buildTabSelector() {
+    Row() {
+      this.buildTabButton('趋势分析', 'trend')
+      this.buildTabButton('数据统计', 'statistics')
+      this.buildTabButton('对比分析', 'comparison')
+    }
+    .width('100%')
+    .padding(AppSpacing.spaceLg)
+    .backgroundColor(AppColors.bgCard)
+    .shadow(AppShadows.shadowSm)
+    .justifyContent(FlexAlign.SpaceAround)
+  }
+
+  @Builder buildTabButton(label: string, tab: string) {
+    Button(label)
+      .fontSize(AppFonts.fontSizeBase)
+      .backgroundColor(this.currentTab === tab ? AppColors.primaryColor : Color.Transparent)
+      .fontColor(this.currentTab === tab ? Color.White : AppColors.textColor)
+      .borderRadius(AppBorderRadius.radius2Xl)
+      .padding({ left: AppSpacing.space2Xl, right: AppSpacing.space2Xl })
+      .onClick(() => {
+        this.currentTab = tab
+      })
+  }
+
+  @Builder buildTrendAnalysis() {
+    Column() {
+      // 统计概览
+      this.buildStatisticsOverview()
+
+      // 步数趋势图
+      this.buildStepChart()
+
+      // 详细数据列表
+      this.buildDataList()
+    }
+    .width('100%')
+  }
+
+  @Builder buildStatisticsAnalysis() {
+    Column() {
+      // 统计概览
+      this.buildStatisticsOverview()
+
+      // 统计分析卡片
+      this.buildStatisticsCards()
+    }
+    .width('100%')
+  }
+
+  @Builder buildComparisonAnalysis() {
+    Column() {
+      // 统计概览
+      this.buildStatisticsOverview()
+
+      // 对比分析
+      this.buildComparisonCards()
+    }
+    .width('100%')
   }
 
   @Builder buildStatisticsOverview() {
@@ -289,6 +364,223 @@ export struct TrendPage {
     .shadow(AppShadows.shadowBase)
   }
 
+  @Builder buildStatisticsCards() {
+    Column() {
+      // 完成度分析
+      Row() {
+        Column() {
+          Text('🎯')
+            .fontSize(32)
+            .margin({ bottom: AppSpacing.spaceSm })
+          
+          Text('目标完成度')
+            .fontSize(AppFonts.fontSizeBase)
+            .fontColor(AppColors.textColor)
+            .fontWeight(AppFonts.fontWeightBold)
+            .margin({ bottom: AppSpacing.spaceXs })
+          
+          Text(`${Math.round((this.avgSteps / 10000) * 100)}%`)
+            .fontSize(AppFonts.fontSizeXl)
+            .fontColor(AppColors.successColor)
+            .fontWeight(AppFonts.fontWeightBold)
+        }
+        .layoutWeight(1)
+        .padding(AppSpacing.spaceLg)
+        .backgroundColor(AppColors.successLight)
+        .borderRadius(AppBorderRadius.radiusLg)
+        .shadow(AppShadows.shadowBase)
+
+        Column() {
+          Text('🔥')
+            .fontSize(32)
+            .margin({ bottom: AppSpacing.spaceSm })
+          
+          Text('活跃天数')
+            .fontSize(AppFonts.fontSizeBase)
+            .fontColor(AppColors.textColor)
+            .fontWeight(AppFonts.fontWeightBold)
+            .margin({ bottom: AppSpacing.spaceXs })
+          
+          Text(`${this.getActiveDays()}天`)
+            .fontSize(AppFonts.fontSizeXl)
+            .fontColor(AppColors.warningColor)
+            .fontWeight(AppFonts.fontWeightBold)
+        }
+        .layoutWeight(1)
+        .padding(AppSpacing.spaceLg)
+        .backgroundColor(AppColors.warningLight)
+        .borderRadius(AppBorderRadius.radiusLg)
+        .shadow(AppShadows.shadowBase)
+        .margin({ left: AppSpacing.spaceLg })
+      }
+      .width('100%')
+      .margin({ bottom: AppSpacing.spaceLg })
+
+      // 趋势分析
+      Row() {
+        Column() {
+          Text('📈')
+            .fontSize(32)
+            .margin({ bottom: AppSpacing.spaceSm })
+          
+          Text('趋势分析')
+            .fontSize(AppFonts.fontSizeBase)
+            .fontColor(AppColors.textColor)
+            .fontWeight(AppFonts.fontWeightBold)
+            .margin({ bottom: AppSpacing.spaceXs })
+          
+          Text(this.getTrendAnalysis())
+            .fontSize(AppFonts.fontSizeBase)
+            .fontColor(this.getTrendColor())
+            .fontWeight(AppFonts.fontWeightMedium)
+        }
+        .layoutWeight(1)
+        .padding(AppSpacing.spaceLg)
+        .backgroundColor(AppColors.primaryLight)
+        .borderRadius(AppBorderRadius.radiusLg)
+        .shadow(AppShadows.shadowBase)
+
+        Column() {
+          Text('💪')
+            .fontSize(32)
+            .margin({ bottom: AppSpacing.spaceSm })
+          
+          Text('最佳表现')
+            .fontSize(AppFonts.fontSizeBase)
+            .fontColor(AppColors.textColor)
+            .fontWeight(AppFonts.fontWeightBold)
+            .margin({ bottom: AppSpacing.spaceXs })
+          
+          Text(this.maxSteps.toLocaleString())
+            .fontSize(AppFonts.fontSizeXl)
+            .fontColor(AppColors.primaryColor)
+            .fontWeight(AppFonts.fontWeightBold)
+        }
+        .layoutWeight(1)
+        .padding(AppSpacing.spaceLg)
+        .backgroundColor(AppColors.bgCard)
+        .borderRadius(AppBorderRadius.radiusLg)
+        .shadow(AppShadows.shadowBase)
+        .margin({ left: AppSpacing.spaceLg })
+      }
+      .width('100%')
+    }
+    .width('100%')
+    .padding(AppSpacing.space3Xl)
+    .backgroundColor(AppColors.bgCard)
+    .borderRadius(AppBorderRadius.radiusLg)
+    .shadow(AppShadows.shadowBase)
+    .margin({ bottom: AppSpacing.spaceLg })
+  }
+
+  @Builder buildComparisonCards() {
+    Column() {
+      // 对比分析
+      Row() {
+        Column() {
+          Text('📊')
+            .fontSize(32)
+            .margin({ bottom: AppSpacing.spaceSm })
+          
+          Text('本周 vs 上周')
+            .fontSize(AppFonts.fontSizeBase)
+            .fontColor(AppColors.textColor)
+            .fontWeight(AppFonts.fontWeightBold)
+            .margin({ bottom: AppSpacing.spaceXs })
+          
+          Text('+15%')
+            .fontSize(AppFonts.fontSizeXl)
+            .fontColor(AppColors.successColor)
+            .fontWeight(AppFonts.fontWeightBold)
+        }
+        .layoutWeight(1)
+        .padding(AppSpacing.spaceLg)
+        .backgroundColor(AppColors.successLight)
+        .borderRadius(AppBorderRadius.radiusLg)
+        .shadow(AppShadows.shadowBase)
+
+        Column() {
+          Text('🏆')
+            .fontSize(32)
+            .margin({ bottom: AppSpacing.spaceSm })
+          
+          Text('本月排名')
+            .fontSize(AppFonts.fontSizeBase)
+            .fontColor(AppColors.textColor)
+            .fontWeight(AppFonts.fontWeightBold)
+            .margin({ bottom: AppSpacing.spaceXs })
+          
+          Text('第25名')
+            .fontSize(AppFonts.fontSizeXl)
+            .fontColor(AppColors.warningColor)
+            .fontWeight(AppFonts.fontWeightBold)
+        }
+        .layoutWeight(1)
+        .padding(AppSpacing.spaceLg)
+        .backgroundColor(AppColors.warningLight)
+        .borderRadius(AppBorderRadius.radiusLg)
+        .shadow(AppShadows.shadowBase)
+        .margin({ left: AppSpacing.spaceLg })
+      }
+      .width('100%')
+      .margin({ bottom: AppSpacing.spaceLg })
+
+      // 进步分析
+      Row() {
+        Column() {
+          Text('🚀')
+            .fontSize(32)
+            .margin({ bottom: AppSpacing.spaceSm })
+          
+          Text('进步速度')
+            .fontSize(AppFonts.fontSizeBase)
+            .fontColor(AppColors.textColor)
+            .fontWeight(AppFonts.fontWeightBold)
+            .margin({ bottom: AppSpacing.spaceXs })
+          
+          Text('稳定提升')
+            .fontSize(AppFonts.fontSizeBase)
+            .fontColor(AppColors.successColor)
+            .fontWeight(AppFonts.fontWeightMedium)
+        }
+        .layoutWeight(1)
+        .padding(AppSpacing.spaceLg)
+        .backgroundColor(AppColors.bgCard)
+        .borderRadius(AppBorderRadius.radiusLg)
+        .shadow(AppShadows.shadowBase)
+
+        Column() {
+          Text('🎯')
+            .fontSize(32)
+            .margin({ bottom: AppSpacing.spaceSm })
+          
+          Text('达标率')
+            .fontSize(AppFonts.fontSizeBase)
+            .fontColor(AppColors.textColor)
+            .fontWeight(AppFonts.fontWeightBold)
+            .margin({ bottom: AppSpacing.spaceXs })
+          
+          Text('85%')
+            .fontSize(AppFonts.fontSizeXl)
+            .fontColor(AppColors.primaryColor)
+            .fontWeight(AppFonts.fontWeightBold)
+        }
+        .layoutWeight(1)
+        .padding(AppSpacing.spaceLg)
+        .backgroundColor(AppColors.primaryLight)
+        .borderRadius(AppBorderRadius.radiusLg)
+        .shadow(AppShadows.shadowBase)
+        .margin({ left: AppSpacing.spaceLg })
+      }
+      .width('100%')
+    }
+    .width('100%')
+    .padding(AppSpacing.space3Xl)
+    .backgroundColor(AppColors.bgCard)
+    .borderRadius(AppBorderRadius.radiusLg)
+    .shadow(AppShadows.shadowBase)
+  }
+
   @Builder buildStepRecordItem(record: StepRecord, index: number) {
     Row() {
       // 日期
@@ -329,9 +621,9 @@ export struct TrendPage {
     const token = this.stateStore.getToken()
     if (token) {
       await this.apiClient.setToken(token)
-      console.log('TrendPage: Token已同步到ApiClient，长度:', token.length)
+      console.log('AnalysisPage: Token已同步到ApiClient，长度:', token.length)
     } else {
-      console.warn('TrendPage: StateStore中没有找到Token')
+      console.warn('AnalysisPage: StateStore中没有找到Token')
     }
   }
 
@@ -404,45 +696,79 @@ export struct TrendPage {
       })
 
       total += steps
-      if (steps > max) max = steps
+      if (steps > max) {
+        max = steps
+      }
     }
 
     this.stepRecords = mockRecords
     this.totalSteps = total
-    this.avgSteps = Math.round(total / this.selectedPeriod)
     this.maxSteps = max
-
+    this.avgSteps = Math.round(total / this.selectedPeriod)
+    
     // 准备图表数据
     this.prepareChartData()
+
+    console.log('生成模拟数据:', mockRecords.length, '条记录')
   }
 
   private prepareChartData(): void {
-    if (this.stepRecords.length === 0) {
-      this.chartData = []
-      this.chartLabels = []
-      return
-    }
-
-    // 按日期排序
-    const sortedRecords = [...this.stepRecords].sort((a, b) =>
-    new Date(a.date).getTime() - new Date(b.date).getTime()
-    )
-
     // 准备图表数据
-    this.chartData = sortedRecords.map(record => record.steps)
-    this.chartLabels = sortedRecords.map(record => {
+    this.chartData = this.stepRecords.map(record => record.steps)
+    this.chartLabels = this.stepRecords.map(record => {
       const date = new Date(record.date)
       return `${date.getMonth() + 1}/${date.getDate()}`
     })
   }
 
-  private formatDate(dateStr: string): string {
-    const date = new Date(dateStr)
-    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
+  // 获取活跃天数（步数超过1000步的天数）
+  private getActiveDays(): number {
+    return this.stepRecords.filter(record => record.steps >= 1000).length
   }
 
-  private getWeekDay(dateStr: string): string {
-    const date = new Date(dateStr)
+  // 获取趋势分析文本
+  private getTrendAnalysis(): string {
+    if (this.stepRecords.length < 2) {
+      return '数据不足' 
+    }
+
+    const firstWeekSteps = this.stepRecords.slice(0, Math.floor(this.stepRecords.length / 2))
+      .reduce((sum, record) => sum + record.steps, 0)
+    const secondWeekSteps = this.stepRecords.slice(Math.floor(this.stepRecords.length / 2))
+      .reduce((sum, record) => sum + record.steps, 0)
+
+    if (secondWeekSteps > firstWeekSteps) {
+      const increasePercent = Math.round(((secondWeekSteps - firstWeekSteps) / firstWeekSteps) * 100)
+      return `增长${increasePercent}%`
+    } else if (secondWeekSteps < firstWeekSteps) {
+      const decreasePercent = Math.round(((firstWeekSteps - secondWeekSteps) / firstWeekSteps) * 100)
+      return `下降${decreasePercent}%`
+    } else {
+      return '保持平稳'
+    }
+  }
+
+  // 获取趋势颜色
+  private getTrendColor(): string {
+    const trend = this.getTrendAnalysis()
+    if (trend.includes('增长')) {
+      return AppColors.successColor
+    } else if (trend.includes('下降')) {
+      return AppColors.errorColor
+    } else {
+      return AppColors.textColor
+    }
+  }
+
+  // 格式化日期
+  private formatDate(dateString: string): string {
+    const date = new Date(dateString)
+    return `${date.getMonth() + 1}月${date.getDate()}日`
+  }
+
+  // 获取星期几
+  private getWeekDay(dateString: string): string {
+    const date = new Date(dateString)
     const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
     return weekDays[date.getDay()]
   }

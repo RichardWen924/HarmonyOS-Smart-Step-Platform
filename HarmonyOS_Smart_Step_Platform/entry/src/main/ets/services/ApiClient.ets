@@ -340,7 +340,6 @@ class ApiClientImpl {
       updateTime?: string;
     }
 
-    // 后端路径是 /user/info,不是 /user (后者返回用户列表)
     const response = await this.request<BackendUserVo>('/user/info', options)
 
     // 转换字段名
@@ -370,13 +369,13 @@ class ApiClientImpl {
       message: string;
       data: undefined;
     }
-    
+
     const errorResponse: ErrorResponse = {
       code: response.code,
       message: response.message,
       data: undefined
     }
-    
+
     return this.createErrorResponse<UserInfo>(response.code, response.message)
   }
 
@@ -469,7 +468,7 @@ class ApiClientImpl {
   async getRankingList(type: 'daily' | 'weekly' | 'monthly'): Promise<ApiResponse<RankingItem[]>> {
     // 后端路径是 /user/rankings,参数是 periodType,不是 /ranking/{type}
     const periodType = type === 'daily' ? 'day' : type === 'weekly' ? 'week' : 'month'
-    const endpoint = `/user/rankings?periodType=${periodType}&pageNum=1&pageSize=10`
+    const endpoint = `/user/rankings?periodType=${periodType}&pageNum=1&pageSize=100`
 
     const options: http.HttpRequestOptions = {
       method: http.RequestMethod.GET
@@ -523,6 +522,39 @@ class ApiClientImpl {
    */
   async uploadSteps(steps: number, date: string): Promise<ApiResponse<void>> {
     return this.uploadStepData(steps, date)
+  }
+
+  /**
+   * 获取步数趋势数据（数据分析）
+   */
+  async getStepTrend(days: number = 7): Promise<ApiResponse<StepRecord[]>> {
+    const endpoint = `/user/steps/trend?days=${days}`
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET
+    }
+    return await this.request<StepRecord[]>(endpoint, options)
+  }
+
+  /**
+   * 获取步数记录列表（用于RecordPage）
+   */
+  async getStepRecords(pageNum: number = 1, pageSize: number = 20): Promise<ApiResponse<StepRecord[]>> {
+    const endpoint = `/user/steps/records?pageNum=${pageNum}&pageSize=${pageSize}`
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET
+    }
+    return await this.request<StepRecord[]>(endpoint, options)
+  }
+
+  /**
+   * 获取兑换记录列表（包含步数记录和积分兑换记录）
+   */
+  async getExchangeRecords(pageNum: number = 1, pageSize: number = 20): Promise<ApiResponse<ExchangeRecord[]>> {
+    const endpoint = `/user/exchange/records?pageNum=${pageNum}&pageSize=${pageSize}`
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET
+    }
+    return await this.request<ExchangeRecord[]>(endpoint, options)
   }
 
   /**

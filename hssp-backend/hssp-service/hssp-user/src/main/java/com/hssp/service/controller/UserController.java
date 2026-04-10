@@ -6,7 +6,9 @@ import com.hssp.common.result.Result;
 import com.hssp.model.user.dto.*;
 import com.hssp.model.user.po.User;
 import com.hssp.model.user.vo.ExchangeRecordVo;
+import com.hssp.model.user.vo.StepRecordVo;
 import com.hssp.model.user.vo.StepStatisticsVo;
+import com.hssp.model.user.vo.StepTrendVo;
 import com.hssp.model.user.vo.UserVo;
 import com.hssp.service.service.IUserService;
 import com.hssp.service.service.MailService;
@@ -124,8 +126,7 @@ public class UserController {
     public Result uploadSteps(@Valid @RequestBody StepUploadDto stepUploadDto) {
         log.info("uploadSteps:{}", stepUploadDto);
         Long userId = UserContext.getUserId();
-        // TODO: 调用Service保存步数
-        // 目前先返回成功
+        userService.uploadSteps(stepUploadDto);
         return Result.success("步数上传成功");
     }
 
@@ -135,40 +136,41 @@ public class UserController {
     @GetMapping("/steps/statistics")
     public Result getStepStatistics(@RequestParam(required = false) String date) {
         log.info("getStepStatistics, date:{}", date);
-        Long userId = UserContext.getUserId();
-        
-        // 构建模拟统计数据 (TODO: 后续从数据库查询)
-        StepStatisticsVo statistics = new StepStatisticsVo();
-        statistics.setTodaySteps(8500);
-        statistics.setWeekSteps(52000);
-        statistics.setMonthSteps(210000);
-        statistics.setTotalSteps(500000);
-        statistics.setAvgDailySteps(7500.0);
-        statistics.setMaxDailySteps(15000);
-        statistics.setMinDailySteps(2000);
-        statistics.setLastUpdate(LocalDateTime.now().toString());
-        
+        StepStatisticsVo statistics = userService.getStepStatistics();
         return Result.success(statistics);
+    }
+
+    /**
+     * 获取步数趋势数据 (数据分析)
+     */
+    @GetMapping("/steps/trend")
+    public Result getStepTrend(@RequestParam(defaultValue = "7") int days) {
+        log.info("getStepTrend, days:{}", days);
+        List<StepTrendVo> trendList = userService.getStepTrend(days);
+        return Result.success(trendList);
+    }
+
+    /**
+     * 获取步数记录列表 (用于RecordPage)
+     */
+    @GetMapping("/steps/records")
+    public Result getStepRecords(
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        log.info("getStepRecords, pageNum:{}, pageSize:{}", pageNum, pageSize);
+        List<StepRecordVo> records = userService.getStepRecords(pageNum, pageSize);
+        return Result.success(records);
     }
 
     /**
      * 获取兑换记录 (前端需要)
      */
     @GetMapping("/exchange/records")
-    public Result getExchangeRecords() {
-        log.info("getExchangeRecords");
-        Long userId = UserContext.getUserId();
-        
-        // 构建模拟兑换记录 (TODO: 后续从数据库查询)
-        List<ExchangeRecordVo> records = new ArrayList<>();
-        ExchangeRecordVo record1 = new ExchangeRecordVo();
-        record1.setId(1L);
-        record1.setSteps(5000);
-        record1.setPoints(50);
-        record1.setExchangeTime(LocalDateTime.now().minusDays(1));
-        record1.setStatus("success");
-        records.add(record1);
-        
+    public Result getExchangeRecords(
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        log.info("getExchangeRecords, pageNum:{}, pageSize:{}", pageNum, pageSize);
+        List<ExchangeRecordVo> records = userService.getExchangeRecords(pageNum, pageSize);
         return Result.success(records);
     }
 }

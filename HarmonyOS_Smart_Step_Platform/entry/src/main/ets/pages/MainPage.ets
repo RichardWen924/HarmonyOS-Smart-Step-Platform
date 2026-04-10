@@ -11,12 +11,12 @@ import {
   AppIcons
 } from '../config/DesignSystem'
 import AppShadows from '../config/AppShadows'
-import { TrendPage } from './TrendPage'
 import { RecordPage } from './RecordPage'
+import { RankingTab } from './RankingTab'
 
 enum TabIndex {
   HOME = 0,
-  TREND = 1,
+  RANKING = 1,
   MALL = 2,
   RECORD = 3,
   PROFILE = 4
@@ -29,7 +29,7 @@ struct MainPage {
   @State todaySteps: number = 0
   @State totalPoints: number = 0
   @State userInfo: UserInfo | null = null
-  
+
   private stateStore = StateStore
   private apiClient = ApiClient
 
@@ -43,7 +43,7 @@ struct MainPage {
     Column() {
       // 顶部标题栏
       this.buildHeader()
-      
+
       // 内容区域
       Stack() {
         // 首页
@@ -52,14 +52,14 @@ struct MainPage {
             .width('100%')
             .height('100%')
         }
-        
-        // 趋势页 - 使用独立的TrendPage组件
-        if (this.currentTabIndex === TabIndex.TREND) {
-          TrendPage()
+
+        // 排行榜页 - 使用RankingTab组件
+        if (this.currentTabIndex === TabIndex.RANKING) {
+          RankingTab()
             .width('100%')
             .height('100%')
         }
-        
+
         // 商城页
         if (this.currentTabIndex === TabIndex.MALL) {
           // MallPage组件暂时使用空页面
@@ -69,7 +69,7 @@ struct MainPage {
               .fontColor(AppColors.titleColor)
               .fontWeight(AppFonts.fontWeightBold)
               .margin({ bottom: AppSpacing.spaceLg })
-            
+
             Text('商品兑换功能开发中')
               .fontSize(AppFonts.fontSizeBase)
               .fontColor(AppColors.textSecondary)
@@ -79,14 +79,14 @@ struct MainPage {
           .justifyContent(FlexAlign.Center)
           .alignItems(HorizontalAlign.Center)
         }
-        
+
         // 记录页
         if (this.currentTabIndex === TabIndex.RECORD) {
           RecordPage()
             .width('100%')
             .height('100%')
         }
-        
+
         // 个人中心页 - 使用路由跳转
         if (this.currentTabIndex === TabIndex.PROFILE) {
           Column() {
@@ -95,7 +95,7 @@ struct MainPage {
               .fontColor(AppColors.titleColor)
               .fontWeight(AppFonts.fontWeightBold)
               .margin({ bottom: AppSpacing.spaceLg })
-            
+
             Text('点击下方Tab栏的"我的"查看个人中心')
               .fontSize(AppFonts.fontSizeBase)
               .fontColor(AppColors.textSecondary)
@@ -107,7 +107,7 @@ struct MainPage {
         }
       }
       .layoutWeight(1)
-      
+
       // 底部 Tab 导航
       this.buildTabBar()
     }
@@ -123,16 +123,16 @@ struct MainPage {
         .fontSize(AppFonts.fontSize2Xl)
         .fontWeight(AppFonts.fontWeightBold)
         .fontColor(AppColors.titleColor)
-      
+
       Blank()
-      
+
       // 显示用户积分
       if (this.totalPoints > 0) {
         Row() {
           Text(AppIcons.points)
             .fontSize(AppFonts.fontSizeLg)
             .margin({ right: AppSpacing.spaceXs })
-          
+
           Text(this.totalPoints.toLocaleString())
             .fontSize(AppFonts.fontSizeBase)
             .fontWeight(AppFonts.fontWeightMedium)
@@ -154,16 +154,16 @@ struct MainPage {
     Row() {
       // Tab 1: 首页
       this.buildTabItem(AppIcons.home, '首页', TabIndex.HOME)
-      
-      // Tab 2: 趋势
-      this.buildTabItem(AppIcons.trend, '趋势', TabIndex.TREND)
-      
+
+      // Tab 2: 排行榜
+      this.buildTabItem(AppIcons.ranking, '排行榜', TabIndex.RANKING)
+
       // Tab 3: 商城
       this.buildTabItem(AppIcons.mall, '商城', TabIndex.MALL)
-      
+
       // Tab 4: 记录
       this.buildTabItem(AppIcons.record, '记录', TabIndex.RECORD)
-      
+
       // Tab 5: 我的 - 跳转到个人中心页面
       this.buildTabItem(AppIcons.profile, '我的', TabIndex.PROFILE, true)
     }
@@ -182,7 +182,7 @@ struct MainPage {
         .fontSize(24)
         .margin({ bottom: AppSpacing.spaceXs })
         .fontColor(this.currentTabIndex === index ? AppColors.primaryColor : AppColors.textSecondary)
-      
+
       Text(label)
         .fontSize(AppFonts.fontSizeXs)
         .fontColor(this.currentTabIndex === index ? AppColors.primaryColor : AppColors.textSecondary)
@@ -205,7 +205,7 @@ struct MainPage {
 
   // 获取当前 Tab 标题
   private getTabTitle(): string {
-    const titles = ['运动健康', '步数趋势', '积分商城', '兑换记录', '个人中心']
+    const titles = ['运动健康', '排行榜', '积分商城', '兑换记录', '个人中心']
     return titles[this.currentTabIndex]
   }
 
@@ -227,7 +227,7 @@ struct MainPage {
       this.userInfo = userInfo
       this.todaySteps = this.stateStore.todaySteps
       this.totalPoints = userInfo.totalPoints
-      
+
       // 从服务器获取最新积分
       const userInfoResponse = await this.apiClient.getUserInfo()
       if (userInfoResponse.code === 1) {
@@ -252,6 +252,7 @@ struct HomePage {
   @State manualInputValue: string = ''
   private stateStore = StateStore
   private apiClient = ApiClient
+  private simulateInterval: number = -1 // 保存定时器ID
 
   aboutToAppear() {
     // 确保ApiClient有正确的Token
@@ -265,10 +266,10 @@ struct HomePage {
         Column() {
           // 今日步数卡片
           this.buildStepCard()
-          
+
           // 快捷功能
           this.buildQuickActions()
-          
+
           // 排行榜入口
           this.buildRankingEntry()
         }
@@ -277,7 +278,7 @@ struct HomePage {
       }
       .scrollable(ScrollDirection.Vertical)
       .layoutWeight(1)
-      
+
       // 手动输入弹窗
       if (this.showManualInputDialog) {
         this.buildManualInputDialog()
@@ -294,9 +295,9 @@ struct HomePage {
           .fontSize(AppFonts.fontSizeLg)
           .fontColor(AppColors.textColor)
           .fontWeight(AppFonts.fontWeightMedium)
-        
+
         Blank()
-        
+
         Text(AppIcons.steps)
           .fontSize(AppFonts.fontSizeLg)
           .fontColor(AppColors.primaryColor)
@@ -310,14 +311,14 @@ struct HomePage {
             .fontSize(AppFonts.fontSize7Xl)
             .fontWeight(AppFonts.fontWeightBold)
             .fontColor(AppColors.primaryColor)
-          
+
           Text('步')
             .fontSize(AppFonts.fontSizeLg)
             .fontColor(AppColors.textSecondary)
             .margin({ top: AppSpacing.spaceXs })
         }
         .layoutWeight(1)
-        
+
         // 目标完成度环
         Column() {
           Stack() {
@@ -328,7 +329,7 @@ struct HomePage {
               .fill(Color.Transparent)
               .stroke(AppColors.borderColor)
               .strokeWidth(4)
-            
+
             // 进度环
             Circle()
               .width(80)
@@ -338,20 +339,20 @@ struct HomePage {
               .strokeWidth(4)
               .strokeDashArray([Math.PI * 80 * (Math.min(this.todaySteps, 10000) / 10000), Math.PI * 80])
               .strokeDashOffset(0)
-            
+
             Column() {
               Text(`${Math.min(Math.round(this.todaySteps / 100), 100)}`)
                 .fontSize(AppFonts.fontSizeLg)
                 .fontWeight(AppFonts.fontWeightBold)
                 .fontColor(AppColors.primaryColor)
-              
+
               Text('%')
                 .fontSize(AppFonts.fontSizeSm)
                 .fontColor(AppColors.textSecondary)
             }
             .alignItems(HorizontalAlign.Center)
           }
-          
+
           Text('目标进度')
             .fontSize(AppFonts.fontSizeXs)
             .fontColor(AppColors.textSecondary)
@@ -367,9 +368,9 @@ struct HomePage {
           Text('目标：10,000 步')
             .fontSize(AppFonts.fontSizeSm)
             .fontColor(AppColors.textSecondary)
-          
+
           Blank()
-          
+
           Text(`${Math.min(this.todaySteps, 10000).toLocaleString()}/10,000`)
             .fontSize(AppFonts.fontSizeSm)
             .fontColor(AppColors.primaryColor)
@@ -396,9 +397,12 @@ struct HomePage {
           .fontColor(Color.White)
           .borderRadius(AppBorderRadius.radius2Xl)
           .padding({ left: AppSpacing.space2Xl, right: AppSpacing.space2Xl })
-          .enabled(!this.isSimulating)
           .onClick(() => {
-            this.simulateWalking()
+            if (this.isSimulating) {
+              this.stopSimulation()
+            } else {
+              this.simulateWalking()
+            }
           })
 
         Blank()
@@ -438,7 +442,7 @@ struct HomePage {
             Text('🔄')
               .fontSize(32)
               .margin({ bottom: AppSpacing.spaceSm })
-            
+
             Text('兑换积分')
               .fontSize(AppFonts.fontSizeSm)
               .fontColor(AppColors.textColor)
@@ -459,7 +463,7 @@ struct HomePage {
             Text('📅')
               .fontSize(32)
               .margin({ bottom: AppSpacing.spaceSm })
-            
+
             Text('手动输入')
               .fontSize(AppFonts.fontSizeSm)
               .fontColor(AppColors.textColor)
@@ -480,7 +484,7 @@ struct HomePage {
             Text('📊')
               .fontSize(32)
               .margin({ bottom: AppSpacing.spaceSm })
-            
+
             Text('数据分析')
               .fontSize(AppFonts.fontSizeSm)
               .fontColor(AppColors.textColor)
@@ -492,9 +496,8 @@ struct HomePage {
           .backgroundColor(AppColors.warningLight)
           .borderRadius(AppBorderRadius.radiusBase)
           .onClick(() => {
-            promptAction.showToast({
-              message: '请点击下方Tab栏的"趋势"查看数据分析',
-              duration: 2000
+            router.pushUrl({
+              url: 'pages/AnalysisPage'
             })
           })
         }
@@ -504,7 +507,7 @@ struct HomePage {
             Text('⚙️')
               .fontSize(32)
               .margin({ bottom: AppSpacing.spaceSm })
-            
+
             Text('运动设置')
               .fontSize(AppFonts.fontSizeSm)
               .fontColor(AppColors.textColor)
@@ -542,21 +545,21 @@ struct HomePage {
           Text('🏆')
             .fontSize(AppFonts.fontSize2Xl)
             .margin({ right: AppSpacing.spaceSm })
-          
+
           Text('步数排行榜')
             .fontSize(AppFonts.fontSizeXl)
             .fontColor(AppColors.titleColor)
             .fontWeight(AppFonts.fontWeightBold)
         }
-        
+
         Blank()
-        
+
         Row() {
           Text('查看完整榜单')
             .fontSize(AppFonts.fontSizeSm)
             .fontColor(AppColors.primaryColor)
             .fontWeight(AppFonts.fontWeightMedium)
-          
+
           Text('➡️')
             .fontSize(AppFonts.fontSizeBase)
             .margin({ left: AppSpacing.spaceXs })
@@ -577,15 +580,15 @@ struct HomePage {
               Circle()
                 .width(60)
                 .height(60)
-                .fill(rank === 1 ? AppColors.warningLight : 
-                      rank === 2 ? AppColors.borderColor : 
-                      AppColors.successLight)
-              
+                .fill(rank === 1 ? AppColors.warningLight :
+                  rank === 2 ? AppColors.borderColor :
+                    AppColors.successLight)
+
               Text(rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉')
                 .fontSize(28)
             }
             .margin({ bottom: AppSpacing.spaceSm })
-            
+
             Column() {
               Text(`用户${rank}`)
                 .fontSize(AppFonts.fontSizeBase)
@@ -593,7 +596,7 @@ struct HomePage {
                 .fontWeight(AppFonts.fontWeightBold)
                 .maxLines(1)
                 .textOverflow({ overflow: TextOverflow.Ellipsis })
-              
+
               Text(`${(30000 - rank * 5000).toLocaleString()}步`)
                 .fontSize(AppFonts.fontSizeSm)
                 .fontColor(rank === 1 ? AppColors.warningColor : AppColors.textSecondary)
@@ -649,7 +652,7 @@ struct HomePage {
         .onClick(() => {
           this.showManualInputDialog = false
         })
-      
+
       // 弹窗内容
       Column() {
         Text('手动输入步数')
@@ -657,12 +660,12 @@ struct HomePage {
           .fontColor(AppColors.titleColor)
           .fontWeight(AppFonts.fontWeightBold)
           .margin({ bottom: AppSpacing.spaceLg })
-        
+
         Text('请输入今日步数（0-50000）')
           .fontSize(AppFonts.fontSizeBase)
           .fontColor(AppColors.textSecondary)
           .margin({ bottom: AppSpacing.spaceLg })
-        
+
         // 输入框
         TextInput({
           placeholder: '例如：5000',
@@ -683,7 +686,7 @@ struct HomePage {
             this.manualInputValue = value
           })
           .margin({ bottom: AppSpacing.spaceLg })
-        
+
         // 按钮组
         Row() {
           Button('取消')
@@ -696,7 +699,7 @@ struct HomePage {
               this.showManualInputDialog = false
               this.manualInputValue = ''
             })
-          
+
           Button('确定')
             .fontSize(AppFonts.fontSizeBase)
             .backgroundColor(AppColors.primaryColor)
@@ -739,25 +742,36 @@ struct HomePage {
 
   private simulateWalking() {
     this.isSimulating = true
-    
+
     // 模拟每 2 秒增加 100-500 步
-    const interval = setInterval(() => {
+    this.simulateInterval = setInterval(() => {
       const addSteps = Math.floor(Math.random() * 400) + 100
       this.todaySteps += addSteps
       this.stateStore.addSteps(addSteps)
-      
+
       if (this.todaySteps >= 10000) {
-        clearInterval(interval)
-        this.isSimulating = false
+        this.stopSimulation()
         promptAction.showToast({
           message: '🎉 恭喜您完成今日目标！',
           duration: 3000
         })
       }
     }, 2000)
-    
+
     promptAction.showToast({
       message: '🚶 开始模拟走路...',
+      duration: 1500
+    })
+  }
+
+  private stopSimulation() {
+    if (this.simulateInterval !== -1) {
+      clearInterval(this.simulateInterval)
+      this.simulateInterval = -1
+    }
+    this.isSimulating = false
+    promptAction.showToast({
+      message: '⏸️ 已停止模拟',
       duration: 1500
     })
   }
@@ -768,12 +782,14 @@ struct HomePage {
         this.todaySteps,
         new Date().toISOString().split('T')[0]
       )
-      
+
       if (response.code === 1) {
         promptAction.showToast({
           message: '✅ 数据上传成功',
           duration: 2000
         })
+        // 上传成功后，重新加载用户数据以更新总步数和剩余步数
+        await this.loadUserDataFromServer()
       } else {
         promptAction.showToast({
           message: response.message,
@@ -788,6 +804,28 @@ struct HomePage {
     }
   }
 
+  // 从服务器加载用户数据
+  private async loadUserDataFromServer(): Promise<void> {
+    try {
+      const userInfoResponse = await this.apiClient.getUserInfo()
+      if (userInfoResponse.code === 1) {
+        const userInfo = userInfoResponse.data as UserInfo
+        await this.stateStore.updatePoints(
+          userInfo.totalPoints,
+          userInfo.remainingSteps
+        )
+        // 更新今日步数为服务器返回的剩余步数
+        if (userInfo.remainingSteps !== undefined && userInfo.remainingSteps !== null) {
+          this.todaySteps = userInfo.remainingSteps
+          await this.stateStore.updateTodaySteps(userInfo.remainingSteps)
+        }
+        console.log('用户数据已更新:', userInfo)
+      }
+    } catch (error) {
+      console.error('Failed to load user data from server:', error)
+    }
+  }
+
   private async exchangePoints(): Promise<void> {
     if (this.todaySteps < 1000) {
       promptAction.showToast({
@@ -796,15 +834,15 @@ struct HomePage {
       })
       return
     }
-    
+
     try {
       const steps = Math.floor(this.todaySteps / 1000) * 1000
       const response = await this.apiClient.exchangePoints(steps)
-      
+
       if (response.code === 1) {
         this.todaySteps = response.data.remainingSteps
         await this.stateStore.updateTodaySteps(this.todaySteps)
-        
+
         promptAction.showToast({
           message: `🎉 成功兑换${response.data.gainedPoints}积分`,
           duration: 2000
@@ -824,7 +862,7 @@ struct HomePage {
 
   private handleManualInput(): void {
     const inputValue = parseInt(this.manualInputValue)
-    
+
     if (isNaN(inputValue) || inputValue < 0 || inputValue > 50000) {
       promptAction.showToast({
         message: '请输入有效的步数（0-50000）',
@@ -832,13 +870,13 @@ struct HomePage {
       })
       return
     }
-    
+
     this.todaySteps += inputValue
     this.stateStore.addSteps(inputValue)
-    
+
     this.showManualInputDialog = false
     this.manualInputValue = ''
-    
+
     promptAction.showToast({
       message: `✅ 成功添加 ${inputValue.toLocaleString()} 步`,
       duration: 2000

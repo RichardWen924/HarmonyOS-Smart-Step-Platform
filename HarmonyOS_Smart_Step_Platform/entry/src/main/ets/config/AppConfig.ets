@@ -5,7 +5,7 @@
 
 class AppConfig {
   // API配置
-  static readonly baseUrl: string = 'http://192.168.59.83:8082'
+  static readonly baseUrl: string = 'http://192.168.59.105:8082'
   static readonly timeout: number = 10000
   static readonly maxRetries: number = 3
   static readonly retryDelay: number = 1000

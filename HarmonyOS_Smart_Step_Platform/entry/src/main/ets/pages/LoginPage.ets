@@ -38,7 +38,6 @@ struct LoginPage {
   @State isLoading: boolean = false
   @State countdown: number = 0
   @State isSendingCode: boolean = false
-  @State showPassword: boolean = false
 
   private apiClient = ApiClient
   private stateStore = StateStore
@@ -371,28 +370,18 @@ struct LoginPage {
         .alignSelf(ItemAlign.Start)
         .margin({ bottom: AppSpacing.spaceSm })
 
-      Row() {
-        TextInput({ placeholder: isRegister ? '请设置密码' : '请输入密码' })
-          .layoutWeight(1)
-          .height(52)
-          .borderRadius(AppBorderRadius.radiusBase)
-          .backgroundColor(AppColors.bgColor)
-          .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
-          .type(this.showPassword ? InputType.Normal : InputType.Password)
-          .fontSize(AppFonts.fontSizeBase)
-          .fontColor(AppColors.textColor)
-          .onChange((value: string) => {
-            this.password = value
-          })
-
-        // 显示/隐藏密码按钮
-        Text(this.showPassword ? '🙈' : '👁️')
-          .fontSize(AppFonts.fontSizeLg)
-          .margin({ left: AppSpacing.spaceSm })
-          .onClick(() => {
-            this.showPassword = !this.showPassword
-          })
-      }
+      TextInput({ placeholder: isRegister ? '请设置密码' : '请输入密码' })
+        .width('100%')
+        .height(52)
+        .borderRadius(AppBorderRadius.radiusBase)
+        .backgroundColor(AppColors.bgColor)
+        .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
+        .type(InputType.Password)
+        .fontSize(AppFonts.fontSizeBase)
+        .fontColor(AppColors.textColor)
+        .onChange((value: string) => {
+          this.password = value
+        })
       .width('100%')
     }
     .width('100%')
@@ -642,7 +631,6 @@ struct LoginPage {
     this.nickname = ''
     this.confirmPassword = ''
     this.countdown = 0
-    this.showPassword = false
   }
 
   // 判断是否为开发模式

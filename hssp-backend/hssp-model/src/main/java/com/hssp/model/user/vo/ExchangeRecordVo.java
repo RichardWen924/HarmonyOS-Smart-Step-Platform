@@ -7,15 +7,16 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * 兑换记录VO
+ * 兑换记录VO - 统一返回步数记录和积分兑换记录
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExchangeRecordVo {
     private Long id;
-    private Integer steps;           // 兑换步数
-    private Integer points;          // 获得积分
-    private LocalDateTime exchangeTime; // 兑换时间
-    private String status;           // 状态: success/failed
+    private String type;             // 类型: step_record(步数记录), points_exchange(积分兑换)
+    private Integer steps;           // 步数（步数记录时有值）
+    private Integer points;          // 积分（积分兑换时有值）
+    private LocalDateTime exchangeTime; // 时间
+    private String description;      // 描述
 }

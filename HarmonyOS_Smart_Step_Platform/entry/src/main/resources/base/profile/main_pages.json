@@ -2,12 +2,12 @@
   "src": [
     "pages/LoginPage",
     "pages/MainPage",
-    "pages/RankingPage",
     "pages/ProfilePage",
     "pages/TestBackendPage",
     "pages/APITestPage",
     "pages/NetworkDiagnosticPage",
     "pages/SimpleNetworkTest",
-    "pages/DebugLoginPage"
+    "pages/DebugLoginPage",
+    "pages/AnalysisPage"
   ]
 }

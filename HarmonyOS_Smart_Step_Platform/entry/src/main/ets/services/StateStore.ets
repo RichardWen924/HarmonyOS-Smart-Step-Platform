@@ -229,6 +229,11 @@ class StateStore {
     return this.token
   }
 
+  // 获取当前用户ID
+  getUserId(): number {
+    return this.userInfo.id
+  }
+
   // 从持久化存储加载 Token
   private async loadToken(): Promise<void> {
     if (!await this.ensureInitialized()) {
