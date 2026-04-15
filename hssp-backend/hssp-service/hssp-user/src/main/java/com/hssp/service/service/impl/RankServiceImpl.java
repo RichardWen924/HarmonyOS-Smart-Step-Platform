@@ -114,6 +114,59 @@ public class RankServiceImpl implements RankService {
         return new PageResult<>(total, rankList, pages, pageNum);
     }
     
+    @Override
+    public RankVO getUserRanking(String periodType, Long userId) {
+        // 从数据库查询所有用户的步数记录
+        List<UserStepData> userStepDataList = queryUserStepsFromDatabase(periodType);
+        
+        // 按步数降序排序
+        userStepDataList.sort((a, b) -> Integer.compare(b.steps, a.steps));
+        
+        // 查找当前用户的位置
+        for (int i = 0; i < userStepDataList.size(); i++) {
+            UserStepData data = userStepDataList.get(i);
+            if (data.userId.equals(userId)) {
+                // 找到用户，构建排名信息
+                User user = userService.getById(userId);
+                
+                RankVO rankVO = new RankVO();
+                rankVO.setRank((long) (i + 1)); // 排名从1开始
+                rankVO.setUserId(userId);
+                rankVO.setTotalSteps(Double.valueOf(data.steps));
+                
+                if (user != null) {
+                    String nickname = user.getNickname();
+                    if (nickname == null || nickname.trim().isEmpty()) {
+                        nickname = user.getUsername();
+                        if (nickname == null || nickname.trim().isEmpty()) {
+                            String email = user.getEmail();
+                            if (email != null && email.contains("@")) {
+                                nickname = email.substring(0, email.indexOf("@"));
+                            } else {
+                                nickname = "用户" + userId;
+                            }
+                        }
+                    }
+                    rankVO.setNickname(nickname);
+                    
+                    String avatar = user.getAvatar();
+                    if (avatar == null || avatar.trim().isEmpty()) {
+                        avatar = "";
+                    }
+                    rankVO.setAvatar(avatar);
+                } else {
+                    rankVO.setNickname("未知用户");
+                    rankVO.setAvatar("");
+                }
+                
+                return rankVO;
+            }
+        }
+        
+        // 未上榜
+        return null;
+    }
+    
     /**
      * 从数据库查询用户步数数据
      */

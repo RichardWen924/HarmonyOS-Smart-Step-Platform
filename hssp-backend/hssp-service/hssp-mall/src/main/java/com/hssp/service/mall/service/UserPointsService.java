@@ -5,4 +5,8 @@ import com.hssp.model.mall.po.UserPoints;
 
 public interface UserPointsService extends IService<UserPoints> {
     void exchangePoints(Integer steps, Long userId);
+    
+    com.hssp.model.user.po.User getUserById(Long userId);
+    
+    UserPoints getUserPoints(Long userId);
 }

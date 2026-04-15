@@ -43,4 +43,20 @@ public class RankController {
 
         return Result.success(pageData);
     }
+    
+    /**
+     * 获取当前用户在指定周期的排名
+     *
+     * @param periodType 周期类型：day（日排行）、week（周排行）、month（月排行）
+     * @return Result，包含用户的排名信息，如果未上榜则返回null
+     */
+    @GetMapping("/ranking/my")
+    public Result getMyRanking(@RequestParam(defaultValue = "month") String periodType) {
+        // 从 UserContext 获取当前登录用户ID
+        Long currentUserId = UserContext.getUserId();
+        
+        RankVO userRanking = rankService.getUserRanking(periodType, currentUserId);
+        
+        return Result.success(userRanking);
+    }
 }

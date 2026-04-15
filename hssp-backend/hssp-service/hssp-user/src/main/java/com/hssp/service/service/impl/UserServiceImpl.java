@@ -215,6 +215,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         
         int todaySteps = stepUploadDto.getSteps();
         
+        // 保存原始步数（用于计算差值）
+        Integer previousTodaySteps = existingRecord != null ? existingRecord.getStepCount() : 0;
+        
         if (existingRecord != null) {
             // 更新已有记录（取较大值）
             int maxSteps = Math.max(existingRecord.getStepCount(), todaySteps);
@@ -242,17 +245,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             
             // 如果是今天的数据，需要更新；如果是历史数据，只更新总步数
             if (recordDate.equals(LocalDate.now())) {
-                // 获取今天之前的步数（用于计算总步数的增量）
-                Integer previousTodaySteps = existingRecord != null ? existingRecord.getStepCount() : 0;
+                // 使用之前保存的原始步数计算差值
                 int stepDiff = todaySteps - previousTodaySteps;
                 
                 log.info("今日步数更新 - 用户: {}, 之前: {}, 现在: {}, 差值: {}", 
                     userId, previousTodaySteps, todaySteps, stepDiff);
                 
-                // 更新用户的今日步数（remaining_step）：直接设置为今天的步数
-                user.setRemainingStep(todaySteps);
+                // 更新用户的剩余步数：累加差值（不是直接设置）
+                Integer currentRemainingStep = user.getRemainingStep() != null ? user.getRemainingStep() : 0;
+                int newRemainingStep = currentRemainingStep + stepDiff;
+                user.setRemainingStep(newRemainingStep);
                 
-                // 更新总步数：累加差值（如果差值为负数，说明步数减少了，也要相应减少总步数）
+                log.info("剩余步数更新 - 用户: {}, 旧值: {}, 新值: {}, 差值: {}", 
+                    userId, currentRemainingStep, newRemainingStep, stepDiff);
+                
+                // 更新总步数：累加差值
                 Integer oldTotalStep = user.getTotalStep() != null ? user.getTotalStep() : 0;
                 int newTotalStep = oldTotalStep + stepDiff;
                 user.setTotalStep(newTotalStep);
@@ -275,7 +282,41 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 log.info("更新最大日步数 - 用户: {}, 新最大值: {}", userId, todaySteps);
             }
             
-            this.updateById(user);
+            // 使用 UpdateWrapper 显式更新字段，确保数据库真正执行 UPDATE
+            com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<User> updateWrapper = 
+                new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<>();
+            updateWrapper.eq("id", userId)
+                        .set("total_step", user.getTotalStep())
+                        .set("remaining_step", user.getRemainingStep())
+                        .set("max_daily_steps", user.getMaxDailySteps());
+            
+            log.info("准备更新数据库 - 用户ID: {}, 总步数: {}, 剩余步数: {}, 最大日步数: {}", 
+                userId, user.getTotalStep(), user.getRemainingStep(), user.getMaxDailySteps());
+            
+            boolean updateSuccess = this.update(null, updateWrapper);
+            
+            log.info("数据库更新结果 - 是否成功: {}", updateSuccess);
+            
+            if (!updateSuccess) {
+                log.error("数据库更新失败！");
+                throw new RuntimeException("数据库更新失败");
+            }
+            
+            // 验证更新是否成功
+            User updatedUser = this.getById(userId);
+            log.info("验证更新 - 用户ID: {}, 总步数: {}, 剩余步数: {}, 最大日步数: {}",
+                updatedUser.getId(), updatedUser.getTotalStep(), updatedUser.getRemainingStep(), updatedUser.getMaxDailySteps());
+            
+            if (!updatedUser.getTotalStep().equals(user.getTotalStep())) {
+                log.error("验证失败！期望总步数: {}, 实际: {}", user.getTotalStep(), updatedUser.getTotalStep());
+                throw new RuntimeException("数据验证失败");
+            }
+            
+            if (!updatedUser.getRemainingStep().equals(user.getRemainingStep())) {
+                log.error("验证失败！期望剩余步数: {}, 实际: {}", user.getRemainingStep(), updatedUser.getRemainingStep());
+                throw new RuntimeException("数据验证失败");
+            }
+            
             log.info("用户信息更新完成 - 用户: {}, 总步数: {}, 剩余步数: {}, 最大日步数: {}", 
                 userId, user.getTotalStep(), user.getRemainingStep(), user.getMaxDailySteps());
         } else {
