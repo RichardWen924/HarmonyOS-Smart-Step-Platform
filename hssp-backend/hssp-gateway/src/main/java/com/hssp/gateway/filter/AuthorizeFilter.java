@@ -24,8 +24,9 @@ public class AuthorizeFilter implements GlobalFilter, Ordered {
     // 白名单路径，不需要 Token 即可访问
     private static final List<String> WHITELIST = Arrays.asList(
             "/user/login",
+            "/user/login-by-code",
             "/user/register",
-            "/user/send-code",
+            "/user/send-verification",  // 发送验证码接口
             "/mall/goods/list" // 允许匿名查看商品
     );
 

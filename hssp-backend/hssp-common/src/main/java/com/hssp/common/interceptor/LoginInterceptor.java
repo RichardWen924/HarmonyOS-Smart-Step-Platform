@@ -83,4 +83,11 @@ public class LoginInterceptor implements HandlerInterceptor {
             throw new BusinessException("Token验证失败", 401);
         }
     }
+    
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        // 清理 ThreadLocal，防止线程复用时的用户信息污染
+        UserContext.removeUserId();
+        log.debug("已清理用户上下文 - URI: {}", request.getRequestURI());
+    }
 }

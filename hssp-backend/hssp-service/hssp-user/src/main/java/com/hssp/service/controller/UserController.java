@@ -96,7 +96,11 @@ public class UserController {
         Long userId = UserContext.getUserId();
         log.info("获取当前用户信息, userId:{}", userId);
         
-        User user = userService.getById(userId);
+        // 使用LambdaQueryWrapper查询，避免缓存问题
+        User user = userService.getOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
+                .eq(User::getId, userId)
+        );
         if (user == null) {
             return Result.error("用户不存在");
         }

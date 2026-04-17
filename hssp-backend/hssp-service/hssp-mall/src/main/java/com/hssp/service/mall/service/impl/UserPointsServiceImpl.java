@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hssp.common.admin.PointRules_Status;
 import com.hssp.model.admin.po.PointRules;
 import com.hssp.model.mall.po.UserPoints;
+import com.hssp.model.user.po.PointsLog;
 import com.hssp.model.user.po.User;
 import com.hssp.service.mall.mapper.PointRulesMapper;
+import com.hssp.service.mall.mapper.PointsLogMapper;
 import com.hssp.service.mall.mapper.UserMapper;
 import com.hssp.service.mall.mapper.UserPointsMapper;
 import com.hssp.service.mall.service.UserPointsService;
@@ -15,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -25,6 +28,7 @@ public class UserPointsServiceImpl extends ServiceImpl<UserPointsMapper, UserPoi
 
     private final PointRulesMapper pointRulesMapper;
     private final UserMapper userMapper;
+    private final PointsLogMapper pointsLogMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -165,6 +169,20 @@ public class UserPointsServiceImpl extends ServiceImpl<UserPointsMapper, UserPoi
             log.info("更新用户 {} 的积分记录，新增积分: {}, 总积分: {}", 
                 userId, earnedPoints, userPoints.getTotalPoints());
         }
+        
+        // 3. 创建积分兑换日志记录
+        PointsLog pointsLog = new PointsLog();
+        pointsLog.setUserId(userId);
+        pointsLog.setBeforeStep(currentRemainingSteps);  // 兑换前的步数
+        pointsLog.setAfterStep(newRemainingSteps);       // 兑换后的步数
+        pointsLog.setPointsAmount(earnedPoints);         // 获得的积分
+        pointsLog.setCreateTime(LocalDateTime.now());    // 兑换时间
+        
+        pointsLogMapper.insert(pointsLog);
+        log.info("✅ 创建积分兑换日志 - 用户: {}, 消耗步数: {}, 获得积分: {}, 日志ID: {}",
+            userId, usedSteps, earnedPoints, pointsLog.getId());
+        
+        log.info("========== 积分兑换处理完成 ==========");
     }
 
     @Override

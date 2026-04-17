@@ -58,33 +58,57 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 //    private StringRedisTemplate redisTemplate;
     @Override
     public void register(RegisterDto registerDto) {
+        log.info("📝 开始注册用户 - 邮箱: {}", registerDto.getEmail());
+        
+        // 1. 检查邮箱是否已存在
         boolean exist = lambdaQuery()
                 .eq(User::getEmail, registerDto.getEmail())
                 .one() != null;
         if (exist) {
+            log.warn("❌ 注册失败 - 邮箱已存在: {}", registerDto.getEmail());
             throw new BusinessException("邮箱已存在");
         }
-        String cacheVerification = Objects.requireNonNull(redisTemplate.opsForValue().get(CODE_PREFIX + registerDto.getEmail())).toString();
-        log.info("cacheVerification: {}", cacheVerification);
-        if (!cacheVerification.equals(registerDto.getVerification())) {
-            throw new BusinessException("验证码错误");
-        } else {
-            // 注册用户
-            User user = new User();
-            user.setEmail(registerDto.getEmail());
-            user.setUsername(registerDto.getEmail());
-            // 密码加密
-            //明文
-            String rawPassword=DEFAULT_PASSWORD;
-            //加密
-            String encodedPassword = passwordEncoder.encode(rawPassword);
-
-            log.info("加密密码{}", encodedPassword);
-
-            user.setPassword(encodedPassword);
-            save(user);
-            redisTemplate.delete(CODE_PREFIX + registerDto.getEmail());
+        
+        // 2. 验证验证码
+        String redisKey = CODE_PREFIX + registerDto.getEmail();
+        Object cacheVerificationObj = redisTemplate.opsForValue().get(redisKey);
+        
+        if (cacheVerificationObj == null) {
+            log.error("❌ 注册失败 - 验证码不存在或已过期 - 邮箱: {}, Redis Key: {}", 
+                registerDto.getEmail(), redisKey);
+            throw new BusinessException("验证码不存在或已过期，请重新获取");
         }
+        
+        String cacheVerification = cacheVerificationObj.toString();
+        log.info("🔍 验证码验证 - 邮箱: {}, 用户输入: {}, Redis中的: {}", 
+            registerDto.getEmail(), registerDto.getVerification(), cacheVerification);
+        
+        if (!cacheVerification.equals(registerDto.getVerification())) {
+            log.error("❌ 注册失败 - 验证码错误 - 邮箱: {}", registerDto.getEmail());
+            throw new BusinessException("验证码错误");
+        }
+        
+        log.info("✅ 验证码验证通过 - 邮箱: {}", registerDto.getEmail());
+        
+        // 3. 创建用户
+        User user = new User();
+        user.setUsername(registerDto.getUsername());  // 使用注册时输入的用户名
+        user.setEmail(registerDto.getEmail());
+        user.setNickname(registerDto.getUsername());  // 昵称默认与用户名相同
+        
+        // 密码加密（使用默认密码）
+        String rawPassword = DEFAULT_PASSWORD;
+        String encodedPassword = passwordEncoder.encode(rawPassword);
+        log.info("🔐 密码加密完成");
+        
+        user.setPassword(encodedPassword);
+        save(user);
+        
+        log.info("✅ 用户注册成功 - ID: {}, 邮箱: {}", user.getId(), user.getEmail());
+        
+        // 4. 删除Redis中的验证码（防止重复使用）
+        redisTemplate.delete(redisKey);
+        log.info("🗑️  已删除Redis中的验证码 - Key: {}", redisKey);
     }
 
     @Override
@@ -238,7 +262,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         }
         
         // 3. 更新用户总步数和剩余步数
-        User user = this.getById(userId);
+        // 重要：重新查询用户信息，避免使用缓存的对象导致数据污染
+        User user = this.getOne(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
+                .eq(User::getId, userId)
+                .last("FOR UPDATE")  // 加锁防止并发问题
+        );
+        
         if (user != null) {
             log.info("上传前用户信息 - 用户: {}, 总步数: {}, 剩余步数: {}", 
                 userId, user.getTotalStep(), user.getRemainingStep());
