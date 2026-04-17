@@ -636,35 +636,98 @@ class ApiClientImpl {
    * 获取商品列表
    */
   async getProducts(): Promise<ApiResponse<ExtendedProduct[]>> {
+    console.log('=== ApiClient: 开始请求商品列表 ===')
     const options: http.HttpRequestOptions = {
       method: http.RequestMethod.GET
     }
 
-    // 后端路径为 /mall/products
-    return await this.request<ExtendedProduct[]>('/mall/products', options)
+    // 后端返回的是MallGoods对象，需要转换为前端期望的ExtendedProduct格式
+    interface BackendMallGoods {
+      id: number;
+      goodsName: string;
+      requiredPoints: number;
+      coverUrl?: string;
+      displayNum?: number;
+      isDeleted?: number;
+      createTime?: string;
+      updateTime?: string;
+    }
+
+    const response = await this.request<BackendMallGoods[]>('/mall/products', options)
+    
+    console.log('ApiClient: 后端响应 - code:', response.code)
+    console.log('ApiClient: 后端响应 - message:', response.message)
+    console.log('ApiClient: 后端响应 - data:', response.data ? response.data.length : 'null', '个商品')
+
+    // 转换字段名和数据结构
+    if (response.code === 1 && response.data) {
+      console.log('ApiClient: 开始转换数据...')
+      const products: ExtendedProduct[] = []
+      for (const goods of response.data) {
+        const product: ExtendedProduct = {
+          id: goods.id,
+          name: goods.goodsName,
+          description: '精美商品，欢迎兑换',
+          points: goods.requiredPoints,
+          pointsRequired: goods.requiredPoints,
+          image: goods.coverUrl || '',
+          stock: goods.displayNum || 0,
+          type: 'physical',
+          category: 'mall'
+        }
+        products.push(product)
+      }
+      console.log('ApiClient: 转换完成，共', products.length, '个商品')
+
+      const result: ApiResponse<ExtendedProduct[]> = {
+        code: response.code,
+        message: response.message,
+        data: products
+      }
+      return result
+    }
+
+    console.warn('ApiClient: 响应失败或无数据，返回空数组')
+    // 返回空数组而不是直接转换类型
+    const emptyResult: ApiResponse<ExtendedProduct[]> = {
+      code: response.code,
+      message: response.message,
+      data: []
+    }
+    return emptyResult
   }
 
   /**
    * 兑换商品
    */
   async exchangeProduct(productId: number, points: number): Promise<ApiResponse<ExchangeResponse>> {
+    console.log('=== ApiClient: 开始兑换商品 ===')
+    console.log('ApiClient: productId:', productId)
+    console.log('ApiClient: points:', points)
+    
     interface ProductExchangeRequest {
-      productId: number;
-      points: number;
+      goodsId: number;  // 后端期望的字段名是goodsId
     }
 
     const requestData: ProductExchangeRequest = {
-      productId: productId,
-      points: points
+      goodsId: productId  // 使用goodsId而非productId
     }
+
+    console.log('ApiClient: 请求数据:', JSON.stringify(requestData))
 
     const options: http.HttpRequestOptions = {
       method: http.RequestMethod.POST,
       extraData: JSON.stringify(requestData)
     }
 
-    // 后端路径是 /mall/exchange
-    return await this.request<ExchangeResponse>('/mall/exchange', options)
+    // 后端路径是 /mall/products/exchange
+    console.log('ApiClient: 请求URL: /mall/products/exchange')
+    const result = await this.request<ExchangeResponse>('/mall/products/exchange', options)
+    
+    console.log('ApiClient: 响应结果 - code:', result.code, 'message:', result.message)
+    console.log('=== ApiClient: 兑换请求完成 ===')
+    
+    return result
   }
 
   /**

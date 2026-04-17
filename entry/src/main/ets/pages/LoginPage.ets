@@ -526,12 +526,21 @@ export struct LoginPage {
       }
 
       if (response.code === 1 && response.data) {
-        console.log('Login successful!')
+        console.log('=== 登录成功 ===')
         console.log('Token:', response.data.token ? response.data.token.substring(0, 20) + '...' : 'null')
-        console.log('UserInfo:', JSON.stringify(response.data.userInfo))
+        console.log('UserInfo ID:', response.data.userInfo.id)
+        console.log('UserInfo username:', response.data.userInfo.username)
+        console.log('UserInfo nickname:', response.data.userInfo.nickname)
+        console.log('UserInfo email:', response.data.userInfo.email)
+        console.log('UserInfo totalSteps:', response.data.userInfo.totalSteps)
+        console.log('UserInfo totalPoints:', response.data.userInfo.totalPoints)
+        console.log('================')
 
         // 保存用户信息和Token
         await this.stateStore.login(response.data.userInfo, response.data.token)
+        
+        console.log('StateStore保存后的userInfo ID:', this.stateStore.getUserId())
+        console.log('StateStore保存后的nickname:', this.stateStore.userInfo.nickname)
 
         promptAction.showToast({
           message: '登录成功',

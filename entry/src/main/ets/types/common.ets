@@ -146,9 +146,11 @@ export interface Product {
   name: string;
   description: string;
   points: number;
+  pointsRequired: number; // 所需积分（必填）
   image?: string;
   stock: number;
   category?: string;
+  type?: string; // 'virtual' | 'physical'
 }
 
 // 扩展商品信息（用于商城页面）

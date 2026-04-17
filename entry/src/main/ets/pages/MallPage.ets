@@ -2,7 +2,7 @@ import router from '@ohos.router'
 import promptAction from '@ohos.promptAction'
 import StateStore from '../services/StateStore'
 import ApiClient from '../services/ApiClient'
-import { Product, UserInfo } from '../types/common'
+import { Product, UserInfo, ExtendedProduct } from '../types/common'
 import {
   AppColors,
   AppFonts,
@@ -11,13 +11,6 @@ import {
   AppIcons,
   AppShadows
 } from '../config/DesignSystem'
-
-
-// 扩展Product接口以包含type字段
-interface ExtendedProduct extends Product {
-  type: string; // 'virtual' | 'physical'
-  pointsRequired: number;
-}
 
 /**
  * 积分商城页面
@@ -298,30 +291,42 @@ export struct MallPage {
   // 加载商品列表
   private async loadProducts(): Promise<void> {
     try {
+      console.log('=== MallPage: 开始加载商品列表 ===')
       this.isLoading = true
       
       // 从后端API获取商品数据
       const response = await this.apiClient.getProducts()
       
+      console.log('MallPage: API响应 - code:', response.code)
+      console.log('MallPage: API响应 - message:', response.message)
+      console.log('MallPage: API响应 - data:', response.data ? response.data.length : 'null', '个商品')
+      
       if (response.code === 1 && response.data) {
         this.products = response.data as ExtendedProduct[]
+        console.log('MallPage: 成功加载', this.products.length, '个商品')
+        if (this.products.length > 0) {
+          console.log('MallPage: 第一个商品:', JSON.stringify(this.products[0]))
+        }
       } else {
         // API调用失败时显示空状态
+        console.warn('MallPage: API返回失败 - code:', response.code, 'message:', response.message)
         this.products = []
         promptAction.showToast({
-          message: '获取商品列表失败，请稍后重试',
+          message: response.message || '获取商品列表失败，请稍后重试',
           duration: 2000
         })
       }
       
       this.isLoading = false
+      console.log('=== MallPage: 商品加载完成 ===')
     } catch (error) {
-      console.error('Failed to load products:', error)
+      console.error('MallPage: 加载商品失败:', error)
       this.products = []
       this.isLoading = false
+      const errorMessage = error instanceof Error ? error.message : String(error)
       promptAction.showToast({
-        message: '网络连接失败，请检查网络设置',
-        duration: 2000
+        message: `网络连接失败: ${errorMessage.includes('Authentication') ? '请重新登录' : '请检查网络设置'}`,
+        duration: 2500
       })
     }
   }
@@ -329,18 +334,54 @@ export struct MallPage {
   // 加载用户信息
   private async loadUserInfo(): Promise<void> {
     try {
-      const userInfo = await this.stateStore.getUserInfo()
-      this.userInfo = userInfo
+      // 从后端获取最新的用户信息
+      const response = await this.apiClient.getUserInfo()
+      if (response.code === 1 && response.data) {
+        this.userInfo = response.data
+        // 同步到本地存储
+        await this.stateStore.saveUserInfo(response.data)
+      }
     } catch (error) {
       console.error('Failed to load user info:', error)
+      // 如果API调用失败，尝试从本地存储获取
+      try {
+        this.userInfo = await this.stateStore.getUserInfo()
+      } catch (localError) {
+        console.error('Failed to get local user info:', localError)
+      }
     }
   }
 
   // 兑换商品
   private async exchangeProduct(product: ExtendedProduct): Promise<void> {
-    if (!this.userInfo || this.userInfo.totalPoints < product.pointsRequired) {
+    console.log('=== MallPage: 开始兑换商品 ===')
+    console.log('商品信息:', product.name, 'ID:', product.id, '所需积分:', product.pointsRequired)
+    
+    if (!this.userInfo) {
+      console.warn('MallPage: 用户未登录')
       promptAction.showToast({
-        message: '积分不足，无法兑换',
+        message: '请先登录',
+        duration: 2000
+      })
+      return
+    }
+
+    console.log('MallPage: 当前用户积分:', this.userInfo.totalPoints)
+    console.log('MallPage: 用户ID:', this.userInfo.id)
+
+    if (this.userInfo.totalPoints < product.pointsRequired) {
+      console.warn('MallPage: 积分不足')
+      promptAction.showToast({
+        message: `积分不足，当前积分: ${this.userInfo.totalPoints}，需要: ${product.pointsRequired}`,
+        duration: 2500
+      })
+      return
+    }
+
+    if (product.stock <= 0) {
+      console.warn('MallPage: 商品库存为0')
+      promptAction.showToast({
+        message: '商品已售罄',
         duration: 2000
       })
       return
@@ -362,33 +403,44 @@ export struct MallPage {
       ]
     }).then(async (result) => {
       if (result.index === 1) {
+        console.log('MallPage: 用户确认兑换，调用API...')
         try {
           // 调用API进行兑换
+          console.log('MallPage: 请求参数 - goodsId:', product.id)
           const exchangeResult = await this.apiClient.exchangeProduct(product.id, product.pointsRequired)
+          
+          console.log('MallPage: API响应 - code:', exchangeResult.code)
+          console.log('MallPage: API响应 - message:', exchangeResult.message)
           
           if (exchangeResult.code === 1) {
             // 兑换成功
+            console.log('MallPage: 兑换成功！')
             promptAction.showToast({
-              message: `兑换成功！${product.name} 已加入您的账户`,
+              message: `✅ 兑换成功！${product.name} 已加入您的账户`,
               duration: 3000
             })
             
             // 更新用户积分和商品库存
+            console.log('MallPage: 刷新用户信息和商品列表...')
             await this.loadUserInfo()
             await this.loadProducts()
           } else {
+            console.error('MallPage: 兑换失败 -', exchangeResult.message)
             promptAction.showToast({
               message: exchangeResult.message || '兑换失败',
               duration: 2000
             })
           }
         } catch (error) {
-          console.error('Exchange product error:', error)
+          console.error('MallPage: 兑换异常:', error)
+          const errorMessage = error instanceof Error ? error.message : String(error)
           promptAction.showToast({
-            message: '兑换失败，请检查网络连接',
-            duration: 2000
+            message: `兑换失败: ${errorMessage.includes('Authentication') ? '请重新登录' : errorMessage}`,
+            duration: 2500
           })
         }
+      } else {
+        console.log('MallPage: 用户取消兑换')
       }
     })
   }
