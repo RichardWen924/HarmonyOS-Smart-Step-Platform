@@ -1,11 +1,15 @@
 {
   "src": [
+    "pages/Index",
     "pages/LoginPage",
     "pages/MainPage",
+    "pages/TrendPage",
+    "pages/RecordPage",
     "pages/RankingPage",
+    "pages/MallPage",
     "pages/ProfilePage",
-    "pages/TestBackendPage",
-    "pages/APITestPage",
-    "pages/NetworkDiagnosticPage"
+    "pages/PointsExchangePage",
+    "pages/AnalysisPage",
+    "pages/TestBackendPage"
   ]
 }

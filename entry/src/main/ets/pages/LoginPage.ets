@@ -21,25 +21,24 @@ enum LoginType {
 
 @Entry
 @Component
-struct LoginPage {
+export struct LoginPage {
   // 登录相关
   @State account: string = ''
   @State password: string = ''
   @State loginType: LoginType = LoginType.PASSWORD
-  
+
   // 注册相关
   @State email: string = ''
   @State verificationCode: string = ''
   @State nickname: string = ''
   @State confirmPassword: string = ''
-  
+
   // UI 状态
   @State isRegisterMode: boolean = false
   @State isLoading: boolean = false
   @State countdown: number = 0
   @State isSendingCode: boolean = false
-  @State showPassword: boolean = false
-  
+
   private apiClient = ApiClient
   private stateStore = StateStore
 
@@ -47,15 +46,15 @@ struct LoginPage {
     Column() {
       // 顶部装饰背景 - 固定高度，不会被Scroll遮挡
       this.buildBackground()
-      
+
       Scroll() {
         Column() {
           // Logo 和标题
           this.buildHeader()
-          
+
           // 表单区域
           this.buildForm()
-          
+
           // 底部链接
           this.buildFooter()
         }
@@ -80,23 +79,23 @@ struct LoginPage {
         Column()
           .width(80)
           .height(80)
-          .backgroundColor(AppColors.primaryLight)
+          .backgroundColor(AppColors.primaryColor)
           .borderRadius(AppBorderRadius.radiusFull)
-          .opacity(0.3)
+          .opacity(0.6)
           .margin({ right: AppSpacing.space2Xl })
-        
+
         Column()
           .width(60)
           .height(60)
-          .backgroundColor(AppColors.successLight)
+          .backgroundColor(AppColors.successColor)
           .borderRadius(AppBorderRadius.radiusFull)
-          .opacity(0.2)
+          .opacity(0.5)
           .margin({ top: AppSpacing.space3Xl })
       }
       .width('100%')
       .justifyContent(FlexAlign.SpaceBetween)
       .padding({ left: AppSpacing.space3Xl, right: AppSpacing.space3Xl })
-      
+
       // 添加一些间距，确保Logo区域不会被遮挡
       Blank()
         .height(60)
@@ -115,13 +114,13 @@ struct LoginPage {
           .fontWeight(AppFonts.fontWeightBold)
           .fontColor(AppColors.primaryColor)
           .margin({ bottom: AppSpacing.spaceSm })
-        
+
         Text('运动健康')
           .fontSize(AppFonts.fontSize3Xl)
           .fontWeight(AppFonts.fontWeightBold)
           .fontColor(AppColors.titleColor)
           .margin({ bottom: AppSpacing.spaceXs })
-        
+
         Text('每一步都算数')
           .fontSize(AppFonts.fontSizeBase)
           .fontColor(AppColors.textSecondary)
@@ -129,7 +128,7 @@ struct LoginPage {
       .width('100%')
       .alignItems(HorizontalAlign.Center)
       .margin({ top: AppSpacing.space2Xl, bottom: AppSpacing.space4Xl })
-      
+
       // 标题
       Column() {
         Text(this.isRegisterMode ? '注册账号' : '欢迎回来')
@@ -137,7 +136,7 @@ struct LoginPage {
           .fontWeight(AppFonts.fontWeightBold)
           .fontColor(AppColors.titleColor)
           .margin({ bottom: AppSpacing.spaceSm })
-        
+
         Text(this.isRegisterMode ? '开启您的运动之旅' : '记录每一步的精彩')
           .fontSize(AppFonts.fontSizeBase)
           .fontColor(AppColors.textSecondary)
@@ -158,7 +157,7 @@ struct LoginPage {
         this.buildNicknameInput()
         this.buildPasswordInput(true)
         this.buildConfirmPasswordInput()
-        
+
         Button('立即注册')
           .width('100%')
           .height(52)
@@ -176,34 +175,34 @@ struct LoginPage {
       } else {
         // 登录表单
         this.buildAccountInput()
-        
+
         // 登录方式切换
         Row() {
           Text('登录方式')
             .fontSize(AppFonts.fontSizeSm)
             .fontColor(AppColors.textSecondary)
-          
+
           Blank()
-          
+
           Text(this.loginType === LoginType.PASSWORD ? '密码登录' : '验证码登录')
             .fontSize(AppFonts.fontSizeSm)
             .fontColor(AppColors.primaryColor)
             .fontWeight(AppFonts.fontWeightMedium)
             .onClick(() => {
-              this.loginType = this.loginType === LoginType.PASSWORD 
-                ? LoginType.VERIFICATION_CODE 
+              this.loginType = this.loginType === LoginType.PASSWORD
+                ? LoginType.VERIFICATION_CODE
                 : LoginType.PASSWORD
             })
         }
         .width('100%')
         .margin({ bottom: AppSpacing.spaceLg })
-        
+
         if (this.loginType === LoginType.PASSWORD) {
           this.buildPasswordInput(false)
         } else {
           this.buildVerificationCodeInput(false)
         }
-        
+
         Button('登录')
           .width('100%')
           .height(52)
@@ -218,11 +217,11 @@ struct LoginPage {
             this.handleLogin()
           })
           .margin({ top: AppSpacing.spaceLg })
-        
+
         // 忘记密码
         Row() {
           Blank()
-          
+
           Text('忘记密码？')
             .fontSize(AppFonts.fontSizeBase)
             .fontColor(AppColors.primaryColor)
@@ -250,7 +249,7 @@ struct LoginPage {
         .fontWeight(AppFonts.fontWeightMedium)
         .alignSelf(ItemAlign.Start)
         .margin({ bottom: AppSpacing.spaceSm })
-      
+
       TextInput({ placeholder: '请输入用户名或邮箱' })
         .width('100%')
         .height(52)
@@ -276,7 +275,7 @@ struct LoginPage {
         .fontWeight(AppFonts.fontWeightMedium)
         .alignSelf(ItemAlign.Start)
         .margin({ bottom: AppSpacing.spaceSm })
-      
+
       TextInput({ placeholder: '请输入邮箱地址' })
         .width('100%')
         .height(52)
@@ -303,7 +302,7 @@ struct LoginPage {
         .fontWeight(AppFonts.fontWeightMedium)
         .alignSelf(ItemAlign.Start)
         .margin({ bottom: AppSpacing.spaceSm })
-      
+
       Row() {
         TextInput({ placeholder: '请输入验证码' })
           .layoutWeight(1)
@@ -316,7 +315,7 @@ struct LoginPage {
           .onChange((value: string) => {
             this.verificationCode = value.trim()
           })
-        
+
         Button(this.countdown > 0 ? `${this.countdown}s` : '获取验证码')
           .fontSize(AppFonts.fontSizeSm)
           .backgroundColor(this.countdown > 0 || this.isSendingCode ? AppColors.borderColor : AppColors.primaryColor)
@@ -338,14 +337,14 @@ struct LoginPage {
   // 构建昵称输入
   @Builder buildNicknameInput() {
     Column() {
-      Text('昵称（可选）')
+      Text('用户名')
         .fontSize(AppFonts.fontSizeBase)
         .fontColor(AppColors.textColor)
         .fontWeight(AppFonts.fontWeightMedium)
         .alignSelf(ItemAlign.Start)
         .margin({ bottom: AppSpacing.spaceSm })
-      
-      TextInput({ placeholder: '请输入昵称' })
+
+      TextInput({ placeholder: '请输入用户名' })
         .width('100%')
         .height(52)
         .borderRadius(AppBorderRadius.radiusBase)
@@ -370,29 +369,19 @@ struct LoginPage {
         .fontWeight(AppFonts.fontWeightMedium)
         .alignSelf(ItemAlign.Start)
         .margin({ bottom: AppSpacing.spaceSm })
-      
-      Row() {
-        TextInput({ placeholder: isRegister ? '请设置密码' : '请输入密码' })
-          .layoutWeight(1)
-          .height(52)
-          .borderRadius(AppBorderRadius.radiusBase)
-          .backgroundColor(AppColors.bgColor)
-          .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
-          .type(this.showPassword ? InputType.Normal : InputType.Password)
-          .fontSize(AppFonts.fontSizeBase)
-          .fontColor(AppColors.textColor)
-          .onChange((value: string) => {
-            this.password = value
-          })
-        
-        // 显示/隐藏密码按钮
-        Text(this.showPassword ? '🙈' : '👁️')
-          .fontSize(AppFonts.fontSizeLg)
-          .margin({ left: AppSpacing.spaceSm })
-          .onClick(() => {
-            this.showPassword = !this.showPassword
-          })
-      }
+
+      TextInput({ placeholder: isRegister ? '请设置密码' : '请输入密码' })
+        .width('100%')
+        .height(52)
+        .borderRadius(AppBorderRadius.radiusBase)
+        .backgroundColor(AppColors.bgColor)
+        .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
+        .type(InputType.Password)
+        .fontSize(AppFonts.fontSizeBase)
+        .fontColor(AppColors.textColor)
+        .onChange((value: string) => {
+          this.password = value
+        })
       .width('100%')
     }
     .width('100%')
@@ -408,7 +397,7 @@ struct LoginPage {
         .fontWeight(AppFonts.fontWeightMedium)
         .alignSelf(ItemAlign.Start)
         .margin({ bottom: AppSpacing.spaceSm })
-      
+
       TextInput({ placeholder: '请再次输入密码' })
         .width('100%')
         .height(52)
@@ -433,7 +422,7 @@ struct LoginPage {
         Text(this.isRegisterMode ? '已有账号？' : '没有账号？')
           .fontSize(AppFonts.fontSizeBase)
           .fontColor(AppColors.textSecondary)
-        
+
         Text(this.isRegisterMode ? '立即登录' : '立即注册')
           .fontSize(AppFonts.fontSizeBase)
           .fontColor(AppColors.primaryColor)
@@ -447,11 +436,6 @@ struct LoginPage {
       .width('100%')
       .justifyContent(FlexAlign.Center)
       .margin({ top: AppSpacing.space3Xl })
-      
-      // 开发模式下的测试按钮
-      if (this.isDevelopmentMode()) {
-        this.buildTestButton()
-      }
     }
   }
 
@@ -465,7 +449,7 @@ struct LoginPage {
 
   // 验证是否可以注册
   private canRegister(): boolean {
-    if (!this.email || !this.password || !this.confirmPassword || !this.verificationCode) return false
+    if (!this.nickname || !this.email || !this.password || !this.confirmPassword || !this.verificationCode) return false
     if (this.password !== this.confirmPassword) return false
     if (this.password.length < 6) return false
     return true
@@ -474,7 +458,7 @@ struct LoginPage {
   // 发送验证码
   private async sendVerificationCode(forRegister: boolean): Promise<void> {
     const targetEmail = forRegister ? this.email : this.account
-    
+
     if (!targetEmail || !targetEmail.includes('@')) {
       promptAction.showToast({
         message: '请输入有效的邮箱地址',
@@ -484,16 +468,16 @@ struct LoginPage {
     }
 
     this.isSendingCode = true
-    
+
     try {
       const response = await this.apiClient.sendVerificationCode(targetEmail)
-      
+
       if (response.code === 1) {
         promptAction.showToast({
           message: '验证码已发送',
           duration: 2000
         })
-        
+
         // 开始倒计时
         this.countdown = 60
         const timer = setInterval(() => {
@@ -509,9 +493,11 @@ struct LoginPage {
         })
       }
     } catch (error) {
+      console.error('❌ 发送验证码失败:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
       promptAction.showToast({
-        message: '发送失败',
-        duration: 2000
+        message: '发送失败: ' + errorMessage,
+        duration: 3000
       })
     } finally {
       this.isSendingCode = false
@@ -532,7 +518,7 @@ struct LoginPage {
 
     try {
       let response: ApiResponse<LoginResponse>
-      
+
       if (this.loginType === LoginType.PASSWORD) {
         response = await this.apiClient.loginByPassword(this.account, this.password)
       } else {
@@ -540,9 +526,13 @@ struct LoginPage {
       }
 
       if (response.code === 1 && response.data) {
-        // 保存用户信息
+        console.log('Login successful!')
+        console.log('Token:', response.data.token ? response.data.token.substring(0, 20) + '...' : 'null')
+        console.log('UserInfo:', JSON.stringify(response.data.userInfo))
+
+        // 保存用户信息和Token
         await this.stateStore.login(response.data.userInfo, response.data.token)
-        
+
         promptAction.showToast({
           message: '登录成功',
           duration: 1500
@@ -555,6 +545,7 @@ struct LoginPage {
           })
         }, 1500)
       } else {
+        console.error('Login failed:', response.message)
         promptAction.showToast({
           message: response.message,
           duration: 2000
@@ -581,7 +572,7 @@ struct LoginPage {
         })
         return
       }
-      
+
       promptAction.showToast({
         message: '请填写完整信息',
         duration: 2000
@@ -593,26 +584,26 @@ struct LoginPage {
 
     try {
       const response = await this.apiClient.register(
+        this.nickname,  // username
         this.email,
         this.verificationCode
       )
 
-      if (response.code === 1 && response.data) {
-        // 保存用户信息
-        await this.stateStore.login(response.data.userInfo, response.data.token)
-        
+      if (response.code === 1) {
+        console.log('Register successful! User should login now.')
+
         promptAction.showToast({
-          message: '注册成功',
+          message: '注册成功，请登录',
           duration: 1500
         })
 
-        // 跳转到主页面
+        // 注册成功后切换到登录模式，而不是直接跳转
         setTimeout(() => {
-          router.replaceUrl({
-            url: 'pages/MainPage'
-          })
+          this.isRegisterMode = false
+          this.clearForm()
         }, 1500)
       } else {
+        console.error('Register failed:', response.message)
         promptAction.showToast({
           message: response.message,
           duration: 2000
@@ -638,7 +629,6 @@ struct LoginPage {
     this.nickname = ''
     this.confirmPassword = ''
     this.countdown = 0
-    this.showPassword = false
   }
 
   // 判断是否为开发模式

@@ -6,28 +6,28 @@
 class DevelopmentConfig {
   // 开发环境配置
   static readonly DEVELOPMENT = {
-    baseUrl: 'http://localhost:8080/api',
+    baseUrl: 'http://192.168.59.100:8080',
     enableMock: false,
     enableLog: true
   }
 
   // 模拟器环境配置
   static readonly EMULATOR = {
-    baseUrl: 'http://10.0.2.2:8080/api',  // Android模拟器专用地址
+    baseUrl: 'http://10.0.2.2:8080',  // Android模拟器专用地址
     enableMock: false,
     enableLog: true
   }
 
   // 生产环境配置
   static readonly PRODUCTION = {
-    baseUrl: 'https://api.yourserver.com/api',
+    baseUrl: 'https://api.yourserver.com',
     enableMock: false,
     enableLog: false
   }
 
   // Mock模式配置
   static readonly MOCK = {
-    baseUrl: 'http://localhost:8080/api',
+    baseUrl: 'http://localhost:8080',
     enableMock: true,
     enableLog: true
   }

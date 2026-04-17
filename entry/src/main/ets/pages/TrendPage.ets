@@ -1,6 +1,7 @@
-import router from '@ohos.router'
+﻿import router from '@ohos.router'
 import promptAction from '@ohos.promptAction'
 import ApiClient from '../services/ApiClient'
+import StateStore from '../services/StateStore'
 import { StepRecord, UserInfo } from '../types/common'
 import { LineChart } from '../components/LineChart'
 import {
@@ -10,7 +11,7 @@ import {
   AppBorderRadius,
   AppIcons
 } from '../config/DesignSystem'
-import AppShadows from '../config/AppShadows'
+import { AppShadows } from '../config/DesignSystem'
 
 @Entry
 @Component
@@ -23,10 +24,13 @@ export struct TrendPage {
   @State isLoading: boolean = true
   @State chartData: number[] = []
   @State chartLabels: string[] = []
-  
+
   private apiClient = ApiClient
+  private stateStore = StateStore
 
   aboutToAppear() {
+    // 确保ApiClient有正确的Token
+    this.syncTokenToApiClient()
     this.loadStepStatistics()
   }
 
@@ -34,15 +38,15 @@ export struct TrendPage {
     Column() {
       // 顶部筛选器
       this.buildFilterHeader()
-      
+
       Scroll() {
         Column() {
           // 统计概览
           this.buildStatisticsOverview()
-          
+
           // 步数趋势图 - 使用曲线图
           this.buildStepChart()
-          
+
           // 详细数据列表
           this.buildDataList()
         }
@@ -63,9 +67,9 @@ export struct TrendPage {
         .fontSize(AppFonts.fontSize2Xl)
         .fontColor(AppColors.titleColor)
         .fontWeight(AppFonts.fontWeightBold)
-      
+
       Blank()
-      
+
       Row() {
         Button('近7天')
           .fontSize(AppFonts.fontSizeSm)
@@ -103,7 +107,7 @@ export struct TrendPage {
           .fontSize(AppFonts.fontSize3Xl)
           .fontWeight(AppFonts.fontWeightBold)
           .fontColor(AppColors.primaryColor)
-        
+
         Text('总步数')
           .fontSize(AppFonts.fontSizeSm)
           .fontColor(AppColors.textSecondary)
@@ -111,17 +115,17 @@ export struct TrendPage {
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Center)
-      
+
       Divider()
         .vertical(true)
         .height(40)
-      
+
       Column() {
         Text(this.avgSteps.toLocaleString())
           .fontSize(AppFonts.fontSize3Xl)
           .fontWeight(AppFonts.fontWeightBold)
           .fontColor(AppColors.successColor)
-        
+
         Text('平均步数')
           .fontSize(AppFonts.fontSizeSm)
           .fontColor(AppColors.textSecondary)
@@ -129,17 +133,17 @@ export struct TrendPage {
       }
       .layoutWeight(1)
       .alignItems(HorizontalAlign.Center)
-      
+
       Divider()
         .vertical(true)
         .height(40)
-      
+
       Column() {
         Text(this.maxSteps.toLocaleString())
           .fontSize(AppFonts.fontSize3Xl)
           .fontWeight(AppFonts.fontWeightBold)
           .fontColor(AppColors.warningColor)
-        
+
         Text('最高步数')
           .fontSize(AppFonts.fontSizeSm)
           .fontColor(AppColors.textSecondary)
@@ -163,9 +167,9 @@ export struct TrendPage {
           .fontSize(AppFonts.fontSizeLg)
           .fontColor(AppColors.titleColor)
           .fontWeight(AppFonts.fontWeightBold)
-        
+
         Blank()
-        
+
         Text(`${this.selectedPeriod}天趋势`)
           .fontSize(AppFonts.fontSizeSm)
           .fontColor(AppColors.textSecondary)
@@ -188,12 +192,12 @@ export struct TrendPage {
           Text('📊')
             .fontSize(48)
             .margin({ bottom: AppSpacing.spaceLg })
-          
+
           Text('暂无数据')
             .fontSize(AppFonts.fontSizeLg)
             .fontColor(AppColors.textSecondary)
             .fontWeight(AppFonts.fontWeightMedium)
-          
+
           Text('开始运动记录数据吧！')
             .fontSize(AppFonts.fontSizeSm)
             .fontColor(AppColors.textDisabled)
@@ -222,9 +226,9 @@ export struct TrendPage {
           .fontSize(AppFonts.fontSizeLg)
           .fontColor(AppColors.titleColor)
           .fontWeight(AppFonts.fontWeightBold)
-        
+
         Blank()
-        
+
         Text(`${this.stepRecords.length}条记录`)
           .fontSize(AppFonts.fontSizeSm)
           .fontColor(AppColors.textSecondary)
@@ -238,7 +242,7 @@ export struct TrendPage {
             .width(40)
             .height(40)
             .color(AppColors.primaryColor)
-          
+
           Text('加载中...')
             .fontSize(AppFonts.fontSizeBase)
             .fontColor(AppColors.textSecondary)
@@ -253,12 +257,12 @@ export struct TrendPage {
           Text('📭')
             .fontSize(48)
             .margin({ bottom: AppSpacing.spaceLg })
-          
+
           Text('暂无步数记录')
             .fontSize(AppFonts.fontSizeLg)
             .fontColor(AppColors.textSecondary)
             .fontWeight(AppFonts.fontWeightMedium)
-          
+
           Text('快去运动生成数据吧！')
             .fontSize(AppFonts.fontSizeSm)
             .fontColor(AppColors.textDisabled)
@@ -293,21 +297,21 @@ export struct TrendPage {
           .fontSize(AppFonts.fontSizeBase)
           .fontColor(AppColors.textColor)
           .fontWeight(AppFonts.fontWeightMedium)
-        
+
         Text(this.getWeekDay(record.date))
           .fontSize(AppFonts.fontSizeXs)
           .fontColor(AppColors.textSecondary)
           .margin({ top: AppSpacing.spaceXs })
       }
       .layoutWeight(1)
-      
+
       // 步数
       Column() {
         Text(record.steps.toLocaleString())
           .fontSize(AppFonts.fontSizeLg)
           .fontColor(AppColors.primaryColor)
           .fontWeight(AppFonts.fontWeightBold)
-        
+
         Text('步')
           .fontSize(AppFonts.fontSizeSm)
           .fontColor(AppColors.textSecondary)
@@ -320,61 +324,74 @@ export struct TrendPage {
     .borderRadius(AppBorderRadius.radiusBase)
   }
 
+  // 同步Token到ApiClient
+  private async syncTokenToApiClient(): Promise<void> {
+    const token = this.stateStore.getToken()
+    if (token) {
+      await this.apiClient.setToken(token)
+      console.log('TrendPage: Token已同步到ApiClient，长度:', token.length)
+    } else {
+      console.warn('TrendPage: StateStore中没有找到Token')
+    }
+  }
+
   private async loadStepStatistics(): Promise<void> {
     this.isLoading = true
 
     try {
-      const response = await this.apiClient.getStepStatistics()
-      
-      if (response.code === 1) {
-        // StepStatistics接口没有这些属性，使用模拟数据
-        await this.generateMockData()
-        
+      // 获取步数趋势数据
+      const trendResponse = await this.apiClient.getStepTrend(this.selectedPeriod)
+
+      if (trendResponse.code === 1 && trendResponse.data) {
+        const trendData = trendResponse.data as StepRecord[]
+
+        // 设置步数记录
+        this.stepRecords = trendData
+
+        // 计算统计数据
+        if (trendData.length > 0) {
+          const total = trendData.reduce((sum, record) => sum + record.steps, 0)
+          const max = Math.max(...trendData.map(record => record.steps))
+          const avg = Math.round(total / trendData.length)
+
+          this.totalSteps = total
+          this.maxSteps = max
+          this.avgSteps = avg
+        } else {
+          this.totalSteps = 0
+          this.maxSteps = 0
+          this.avgSteps = 0
+        }
+
         // 准备图表数据
         this.prepareChartData()
+
+        console.log('步数趋势数据加载成功:', trendData.length, '条记录')
       } else {
-        // 模拟数据
-        await this.generateMockData()
+        console.warn('步数趋势数据为空')
+        this.stepRecords = []
+        this.totalSteps = 0
+        this.maxSteps = 0
+        this.avgSteps = 0
+        this.chartData = []
+        this.chartLabels = []
       }
     } catch (error) {
       console.error('Failed to load step statistics:', error)
-      // 模拟数据
-      await this.generateMockData()
+      promptAction.showToast({
+        message: '❌ 加载失败，请检查网络连接',
+        duration: 2000
+      })
+      // 失败时清空数据
+      this.stepRecords = []
+      this.totalSteps = 0
+      this.maxSteps = 0
+      this.avgSteps = 0
+      this.chartData = []
+      this.chartLabels = []
     } finally {
       this.isLoading = false
     }
-  }
-
-  private async generateMockData(): Promise<void> {
-    // 生成模拟数据
-    const mockRecords: StepRecord[] = []
-    let total = 0
-    let max = 0
-    
-    for (let i = this.selectedPeriod - 1; i >= 0; i--) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      const dateString = date.toISOString().split('T')[0]
-      const steps = Math.floor(Math.random() * 15000) + 3000
-      
-      mockRecords.push({
-        id: i + 1,
-        date: dateString,
-        steps: steps,
-        timestamp: date.toISOString()
-      })
-      
-      total += steps
-      if (steps > max) max = steps
-    }
-    
-    this.stepRecords = mockRecords
-    this.totalSteps = total
-    this.avgSteps = Math.round(total / this.selectedPeriod)
-    this.maxSteps = max
-    
-    // 准备图表数据
-    this.prepareChartData()
   }
 
   private prepareChartData(): void {
@@ -385,8 +402,8 @@ export struct TrendPage {
     }
 
     // 按日期排序
-    const sortedRecords = [...this.stepRecords].sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
+    const sortedRecords = [...this.stepRecords].sort((a, b) =>
+    new Date(a.date).getTime() - new Date(b.date).getTime()
     )
 
     // 准备图表数据

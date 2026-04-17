@@ -1,6 +1,6 @@
-import promptAction from '@ohos.promptAction'
 import router from '@ohos.router'
-import StateStore, { UserInfoImpl } from '../services/StateStore'
+import promptAction from '@ohos.promptAction'
+import StateStore from '../services/StateStore'
 import ApiClient from '../services/ApiClient'
 import { UserInfo } from '../types/common'
 import {
@@ -8,526 +8,532 @@ import {
   AppFonts,
   AppSpacing,
   AppBorderRadius,
-  AppIcons
+  AppIcons,
+  AppShadows
 } from '../config/DesignSystem'
-import AppShadows from '../config/AppShadows'
 
 @Entry
 @Component
-struct ProfilePage {
+export struct ProfilePage {
   @State userInfo: UserInfo | null = null
-  @State isEditing: boolean = false
+  @State todaySteps: number = 0
+  @State totalPoints: number = 0
+  
+  // 编辑个人信息相关状态
+  @State showEditDialog: boolean = false
   @State editNickname: string = ''
   @State editEmail: string = ''
   @State editSex: number = 0
+  
+  // 修改密码相关状态
   @State showPasswordDialog: boolean = false
   @State oldPassword: string = ''
   @State newPassword: string = ''
   @State confirmPassword: string = ''
-  
+
   private stateStore = StateStore
   private apiClient = ApiClient
 
   aboutToAppear() {
-    this.loadUserInfo()
+    this.loadUserData()
+  }
+
+  // 页面显示时重新加载数据，但保留本地最新的步数
+  onPageShow() {
+    console.log('ProfilePage: 页面显示，刷新用户数据')
+    // 直接调用loadUserData，它内部已经处理了保留本地步数的逻辑
+    this.loadUserData()
   }
 
   build() {
     Column() {
-      // 顶部导航栏
-      this.buildHeader()
-      
       Scroll() {
         Column() {
-          // 用户信息卡片
-          this.buildUserCard()
-          
-          // 统计数据
-          this.buildStatistics()
-          
-          // 功能菜单
-          this.buildFunctionMenu()
-          
-          // 退出登录
-          this.buildLogoutButton()
+          // 个人信息卡片
+          this.buildProfileCard()
+
+          // 功能列表
+          this.buildFunctionList()
         }
         .width('100%')
         .padding(AppSpacing.spaceLg)
       }
       .scrollable(ScrollDirection.Vertical)
+      .layoutWeight(1)
+      
+      // 编辑个人信息对话框
+      if (this.showEditDialog) {
+        this.buildEditProfileDialog()
+      }
+      
+      // 修改密码对话框
+      if (this.showPasswordDialog) {
+        this.buildPasswordDialog()
+      }
     }
     .width('100%')
     .height('100%')
     .backgroundColor(AppColors.bgColor)
   }
 
-  // 构建头部
-  @Builder buildHeader() {
-    Row() {
-      Text('个人中心')
-        .fontSize(AppFonts.fontSize2Xl)
-        .fontWeight(AppFonts.fontWeightBold)
-        .fontColor(AppColors.titleColor)
-      
-      Blank()
-      
-      if (this.isEditing) {
-        Row() {
-          Text('取消')
-            .fontSize(AppFonts.fontSizeBase)
-            .fontColor(AppColors.textSecondary)
-            .fontWeight(AppFonts.fontWeightMedium)
-            .onClick(() => {
-              this.isEditing = false
-              this.loadUserInfo()
-            })
-          
-          Button('保存')
-            .fontSize(AppFonts.fontSizeBase)
-            .backgroundColor(AppColors.primaryColor)
-            .fontColor(Color.White)
-            .borderRadius(AppBorderRadius.radius2Xl)
-            .padding({ left: AppSpacing.space2Xl, right: AppSpacing.space2Xl })
-            .margin({ left: AppSpacing.spaceSm })
-            .onClick(() => {
-              this.saveUserInfo()
-            })
-        }
-      } else {
-        Button('编辑')
-          .fontSize(AppFonts.fontSizeBase)
-          .backgroundColor(AppColors.bgColor)
-          .fontColor(AppColors.textColor)
-          .borderRadius(AppBorderRadius.radius2Xl)
-          .padding({ left: AppSpacing.space2Xl, right: AppSpacing.space2Xl })
-          .onClick(() => {
-            this.startEditing()
-          })
-      }
-    }
-    .width('100%')
-    .padding({ left: AppSpacing.space3Xl, right: AppSpacing.space3Xl, top: AppSpacing.spaceLg, bottom: AppSpacing.spaceLg })
-    .backgroundColor(AppColors.bgCard)
-    .shadow(AppShadows.shadowSm)
-  }
-
-  // 构建用户信息卡片
-  @Builder buildUserCard() {
+  @Builder buildProfileCard() {
     Column() {
-      // 头像
-      Column() {
-        Text(AppIcons.profile)
-          .fontSize(48)
-        
-        if (this.isEditing) {
-          Text('点击修改头像')
-            .fontSize(AppFonts.fontSizeXs)
-            .fontColor(AppColors.primaryColor)
-            .fontWeight(AppFonts.fontWeightMedium)
-            .margin({ top: AppSpacing.spaceXs })
+      // 头像和基本信息
+      Row() {
+        Column() {
+          Text(AppIcons.profile)
+            .fontSize(48)
         }
-      }
-      .width(100)
-      .height(100)
-      .backgroundColor(AppColors.primaryLight)
-      .borderRadius(AppBorderRadius.radiusFull)
-      .justifyContent(FlexAlign.Center)
-      .onClick(() => {
-        if (this.isEditing) {
-          promptAction.showToast({
-            message: '头像修改功能开发中',
-            duration: 2000
-          })
-        }
-      })
-      
-      // 昵称和邮箱
-      Column() {
-        if (this.isEditing) {
-          TextInput({ placeholder: '请输入昵称' })
-            .width('100%')
-            .height(44)
-            .borderRadius(AppBorderRadius.radiusBase)
-            .backgroundColor(AppColors.bgColor)
-            .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
-            .textAlign(TextAlign.Center)
-            .fontSize(AppFonts.fontSizeLg)
-            .fontColor(AppColors.titleColor)
-            .fontWeight(AppFonts.fontWeightMedium)
-            .onChange((value: string) => {
-              this.editNickname = value.trim()
-            })
-        } else {
-          Text(this.userInfo?.nickname || '未设置昵称')
-            .fontSize(AppFonts.fontSize2Xl)
+        .width(80)
+        .height(80)
+        .backgroundColor(AppColors.primaryLight)
+        .borderRadius(AppBorderRadius.radiusFull)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+        .margin({ right: AppSpacing.spaceLg })
+
+        Column() {
+          Text(this.userInfo?.nickname || '用户')
+            .fontSize(AppFonts.fontSizeXl)
             .fontWeight(AppFonts.fontWeightBold)
             .fontColor(AppColors.titleColor)
-            .margin({ top: AppSpacing.spaceLg })
-        }
-        
-        if (this.isEditing) {
-          TextInput({ placeholder: '请输入邮箱' })
-            .width('100%')
-            .height(44)
-            .borderRadius(AppBorderRadius.radiusBase)
-            .backgroundColor(AppColors.bgColor)
-            .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
-            .textAlign(TextAlign.Center)
-            .margin({ top: AppSpacing.spaceSm })
-            .type(InputType.Email)
-            .fontSize(AppFonts.fontSizeBase)
-            .fontColor(AppColors.textColor)
-            .onChange((value: string) => {
-              this.editEmail = value.trim()
-            })
-        } else {
-          Text(this.userInfo?.email || '')
-            .fontSize(AppFonts.fontSizeBase)
+            .alignSelf(ItemAlign.Start)
+
+          Text(`ID: ${this.userInfo?.id || '未知'}`)
+            .fontSize(AppFonts.fontSizeSm)
             .fontColor(AppColors.textSecondary)
+            .alignSelf(ItemAlign.Start)
             .margin({ top: AppSpacing.spaceXs })
-        }
-        
-        // 性别选择（编辑模式）
-        if (this.isEditing) {
-          Row() {
-            Text('性别')
-              .fontSize(AppFonts.fontSizeBase)
-              .fontColor(AppColors.textColor)
-              .fontWeight(AppFonts.fontWeightMedium)
             
-            Blank()
-            
-            Row() {
-              Text('男')
-                .fontSize(AppFonts.fontSizeSm)
-                .fontColor(this.editSex === 1 ? Color.White : AppColors.textColor)
-                .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg, top: AppSpacing.spaceSm, bottom: AppSpacing.spaceSm })
-                .backgroundColor(this.editSex === 1 ? AppColors.primaryColor : AppColors.bgColor)
-                .borderRadius(AppBorderRadius.radiusFull)
-                .onClick(() => {
-                  this.editSex = 1
-                })
-              
-              Text('女')
-                .fontSize(AppFonts.fontSizeSm)
-                .fontColor(this.editSex === 2 ? Color.White : AppColors.textColor)
-                .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg, top: AppSpacing.spaceSm, bottom: AppSpacing.spaceSm })
-                .backgroundColor(this.editSex === 2 ? AppColors.warningColor : AppColors.bgColor)
-                .borderRadius(AppBorderRadius.radiusFull)
-                .margin({ left: AppSpacing.spaceSm })
-                .onClick(() => {
-                  this.editSex = 2
-                })
-              
-              Text('保密')
-                .fontSize(AppFonts.fontSizeSm)
-                .fontColor(this.editSex === 0 ? Color.White : AppColors.textColor)
-                .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg, top: AppSpacing.spaceSm, bottom: AppSpacing.spaceSm })
-                .backgroundColor(this.editSex === 0 ? AppColors.textSecondary : AppColors.bgColor)
-                .borderRadius(AppBorderRadius.radiusFull)
-                .margin({ left: AppSpacing.spaceSm })
-                .onClick(() => {
-                  this.editSex = 0
-                })
-            }
+          if (this.userInfo?.email) {
+            Text(this.userInfo.email)
+              .fontSize(AppFonts.fontSizeSm)
+              .fontColor(AppColors.textSecondary)
+              .alignSelf(ItemAlign.Start)
+              .margin({ top: 4 })
           }
-          .width('100%')
-          .margin({ top: AppSpacing.spaceLg })
-        } else {
-          Text(this.userInfo?.sex === 1 ? '男' : this.userInfo?.sex === 2 ? '女' : '')
+          
+          if (this.userInfo?.sex !== undefined && this.userInfo?.sex !== null) {
+            Text(`性别: ${this.userInfo.sex === 1 ? '男' : this.userInfo.sex === 0 ? '女' : '未设置'}`)
+              .fontSize(AppFonts.fontSizeSm)
+              .fontColor(AppColors.textSecondary)
+              .alignSelf(ItemAlign.Start)
+              .margin({ top: 4 })
+          }
+        }
+        .layoutWeight(1)
+      }
+      .width('100%')
+      .margin({ bottom: AppSpacing.spaceLg })
+
+      // 数据统计
+      Row() {
+        Column() {
+          Text(this.todaySteps.toLocaleString())
+            .fontSize(AppFonts.fontSize2Xl)
+            .fontWeight(AppFonts.fontWeightBold)
+            .fontColor(AppColors.primaryColor)
+
+          Text('今日步数')
             .fontSize(AppFonts.fontSizeSm)
             .fontColor(AppColors.textSecondary)
             .margin({ top: AppSpacing.spaceXs })
         }
+        .layoutWeight(1)
+
+        Divider()
+          .vertical(true)
+          .height(40)
+
+        Column() {
+          Text(this.totalPoints.toLocaleString())
+            .fontSize(AppFonts.fontSize2Xl)
+            .fontWeight(AppFonts.fontWeightBold)
+            .fontColor(AppColors.warningColor)
+
+          Text('总积分')
+            .fontSize(AppFonts.fontSizeSm)
+            .fontColor(AppColors.textSecondary)
+            .margin({ top: AppSpacing.spaceXs })
+        }
+        .layoutWeight(1)
+
+        Divider()
+          .vertical(true)
+          .height(40)
+
+        Column() {
+          Text((this.userInfo?.totalSteps || 0).toLocaleString())
+            .fontSize(AppFonts.fontSize2Xl)
+            .fontWeight(AppFonts.fontWeightBold)
+            .fontColor(AppColors.successColor)
+
+          Text('总步数')
+            .fontSize(AppFonts.fontSizeSm)
+            .fontColor(AppColors.textSecondary)
+            .margin({ top: AppSpacing.spaceXs })
+        }
+        .layoutWeight(1)
       }
-      .alignItems(HorizontalAlign.Center)
-      .margin({ top: AppSpacing.spaceLg })
+      .width('100%')
     }
     .width('100%')
     .padding(AppSpacing.space3Xl)
     .backgroundColor(AppColors.bgCard)
     .borderRadius(AppBorderRadius.radiusLg)
-    .shadow(AppShadows.shadowBase)
+    .shadow(AppShadows.shadowCard)
     .margin({ bottom: AppSpacing.spaceLg })
   }
 
-  // 构建统计数据
-  @Builder buildStatistics() {
-    Row() {
-      Column() {
-        Text(this.userInfo?.totalSteps.toLocaleString() || '0')
-          .fontSize(AppFonts.fontSize3Xl)
-          .fontWeight(AppFonts.fontWeightBold)
-          .fontColor(AppColors.primaryColor)
-        
-        Text('总步数')
-          .fontSize(AppFonts.fontSizeSm)
-          .fontColor(AppColors.textSecondary)
-          .margin({ top: AppSpacing.spaceXs })
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Center)
-      
-      Divider()
-        .vertical(true)
-        .height(40)
-      
-      Column() {
-        Text(this.userInfo?.totalPoints.toLocaleString() || '0')
-          .fontSize(AppFonts.fontSize3Xl)
-          .fontWeight(AppFonts.fontWeightBold)
-          .fontColor(AppColors.warningColor)
-        
-        Text('总积分')
-          .fontSize(AppFonts.fontSizeSm)
-          .fontColor(AppColors.textSecondary)
-          .margin({ top: AppSpacing.spaceXs })
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Center)
-      
-      Divider()
-        .vertical(true)
-        .height(40)
-      
-      Column() {
-        Text(this.userInfo?.remainingSteps.toLocaleString() || '0')
-          .fontSize(AppFonts.fontSize3Xl)
-          .fontWeight(AppFonts.fontWeightBold)
-          .fontColor(AppColors.successColor)
-        
-        Text('剩余步数')
-          .fontSize(AppFonts.fontSizeSm)
-          .fontColor(AppColors.textSecondary)
-          .margin({ top: AppSpacing.spaceXs })
-      }
-      .layoutWeight(1)
-      .alignItems(HorizontalAlign.Center)
-    }
-    .width('100%')
-    .padding(AppSpacing.space3Xl)
-    .backgroundColor(AppColors.bgCard)
-    .borderRadius(AppBorderRadius.radiusLg)
-    .shadow(AppShadows.shadowBase)
-    .margin({ bottom: AppSpacing.spaceLg })
-  }
-
-  // 构建功能菜单
-  @Builder buildFunctionMenu() {
+  @Builder buildFunctionList() {
     Column() {
-      // 账户安全
-      Text('账户安全')
-        .fontSize(AppFonts.fontSizeSm)
-        .fontColor(AppColors.textSecondary)
-        .alignSelf(ItemAlign.Start)
-        .margin({ bottom: AppSpacing.spaceLg })
-      
-      this.buildMenuItem(AppIcons.security, '修改密码', () => {
-        this.showPasswordDialog = true
+      // 个人信息管理功能
+      this.buildFunctionItem('👤', '修改个人信息', () => {
+        this.editProfile()
       })
       
-      this.buildMenuItem(AppIcons.notification, '账号绑定', () => {
-        promptAction.showToast({
-          message: '账号绑定功能开发中',
-          duration: 2000
-        })
+      this.buildFunctionItem('🔐', '修改密码', () => {
+        this.changePassword()
       })
       
-      // 通用设置
-      Text('通用设置')
-        .fontSize(AppFonts.fontSizeSm)
-        .fontColor(AppColors.textSecondary)
-        .alignSelf(ItemAlign.Start)
-        .margin({ bottom: AppSpacing.spaceLg, top: AppSpacing.space2Xl })
-      
-      this.buildMenuItem(AppIcons.settings, '步数设置', () => {
-        promptAction.showToast({
-          message: '步数设置功能开发中',
-          duration: 2000
-        })
+      Divider()
+        .strokeWidth(1)
+        .color(AppColors.dividerColor)
+        .margin({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
+
+      // 设置相关功能
+      this.buildFunctionItem('⚙️', '应用设置', () => {
+        console.log('打开应用设置')
       })
       
-      this.buildMenuItem(AppIcons.clock, '消息通知', () => {
-        promptAction.showToast({
-          message: '消息通知功能开发中',
-          duration: 2000
-        })
+      this.buildFunctionItem('🔔', '消息通知', () => {
+        console.log('打开消息通知设置')
       })
       
-      // 关于
-      Text('关于')
-        .fontSize(AppFonts.fontSizeSm)
-        .fontColor(AppColors.textSecondary)
-        .alignSelf(ItemAlign.Start)
-        .margin({ bottom: AppSpacing.spaceLg, top: AppSpacing.space2Xl })
-      
-      this.buildMenuItem(AppIcons.info, '关于我们', () => {
-        promptAction.showToast({
-          message: '版本：v1.0.0\n运动让生活更美好',
-          duration: 3000
-        })
+      this.buildFunctionItem('🔒', '隐私设置', () => {
+        console.log('打开隐私设置')
       })
       
-      this.buildMenuItem(AppIcons.document, '用户协议', () => {
-        promptAction.showToast({
-          message: '用户协议内容开发中',
-          duration: 2000
-        })
+      this.buildFunctionItem('ℹ️', '关于我们', () => {
+        console.log('打开关于页面')
       })
       
-      this.buildMenuItem(AppIcons.privacy, '隐私政策', () => {
-        promptAction.showToast({
-          message: '隐私政策内容开发中',
-          duration: 2000
-        })
+      this.buildFunctionItem('📄', '用户协议', () => {
+        console.log('打开用户协议')
+      })
+      
+      this.buildFunctionItem('🚪', '退出登录', () => {
+        this.logout()
       })
     }
     .width('100%')
-    .padding(AppSpacing.space3Xl)
     .backgroundColor(AppColors.bgCard)
     .borderRadius(AppBorderRadius.radiusLg)
-    .shadow(AppShadows.shadowBase)
-    .margin({ bottom: AppSpacing.spaceLg })
+    .shadow(AppShadows.shadowCard)
   }
 
-  // 构建菜单项
-  @Builder buildMenuItem(icon: string, title: string, onClick: () => void) {
+  @Builder buildFunctionItem(icon: string, title: string, onClick: () => void) {
     Row() {
       Text(icon)
-        .fontSize(AppFonts.fontSize2Xl)
+        .fontSize(24)
         .margin({ right: AppSpacing.spaceLg })
-      
+
       Text(title)
         .fontSize(AppFonts.fontSizeBase)
         .fontColor(AppColors.textColor)
         .fontWeight(AppFonts.fontWeightMedium)
         .layoutWeight(1)
-      
-      Text('›')
-        .fontSize(AppFonts.fontSizeLg)
-        .fontColor(AppColors.borderColor)
+
+      Text('➡️')
+        .fontSize(AppFonts.fontSizeBase)
+        .fontColor(AppColors.textSecondary)
     }
     .width('100%')
-    .padding({ top: AppSpacing.spaceLg, bottom: AppSpacing.spaceLg })
+    .padding(AppSpacing.spaceLg)
+    .backgroundColor('#00000000')
     .onClick(onClick)
   }
 
-  // 构建退出登录按钮
-  @Builder buildLogoutButton() {
-    Column() {
-      Button('退出登录')
-        .width('100%')
-        .height(52)
-        .fontSize(AppFonts.fontSizeLg)
-        .fontWeight(AppFonts.fontWeightMedium)
-        .backgroundColor(AppColors.errorColor)
-        .fontColor(Color.White)
-        .borderRadius(AppBorderRadius.radius2Xl)
-        .onClick(() => {
-          this.handleLogout()
-        })
-    }
-    .width('100%')
-    .padding({ bottom: AppSpacing.space3Xl, top: AppSpacing.spaceLg })
-  }
-
-  // 加载用户信息
-  private async loadUserInfo(): Promise<void> {
+  private async loadUserData(): Promise<void> {
     try {
-      const userInfo = await this.stateStore.getUserInfo()
-      this.userInfo = userInfo
-      this.editNickname = userInfo.nickname
-      this.editEmail = userInfo.email
-      this.editSex = userInfo.sex || 0
-    } catch (error) {
-      console.error('Failed to load user info:', error)
-    }
-  }
-
-  // 开始编辑
-  private startEditing(): void {
-    this.isEditing = true
-    this.loadUserInfo()
-  }
-
-  // 保存用户信息
-  private async saveUserInfo(): Promise<void> {
-    if (!this.editNickname.trim()) {
-      promptAction.showToast({
-        message: '请输入昵称',
-        duration: 2000
-      });
-      return;
-    }
-
-    if (this.editEmail && !this.editEmail.includes('@')) {
-      promptAction.showToast({
-        message: '请输入有效的邮箱地址',
-        duration: 2000
-      });
-      return;
-    }
-
-    try {
-      const response = await this.apiClient.updateUserInfo({
-        email: this.editEmail,
-        nickname: this.editNickname,
-        sex: this.editSex
-      });
+      // 先从后端获取最新的用户信息
+      console.log('ProfilePage: 开始从后端加载用户数据')
+      const userInfoResponse = await this.apiClient.getUserInfo()
       
-      if (response.code === 1) {
-        // 更新本地用户信息
-        const newUserInfo: UserInfo = {
-          id: this.userInfo!.id,
-          username: this.userInfo!.username,
-          email: this.editEmail,
-          nickname: this.editNickname,
-          sex: this.editSex,
-          totalSteps: this.userInfo!.totalSteps,
-          totalPoints: this.userInfo!.totalPoints,
-          remainingSteps: this.userInfo!.remainingSteps
-        };
-        await this.stateStore.saveUserInfo(newUserInfo);
-        this.userInfo = newUserInfo;
-        this.isEditing = false;
+      if (userInfoResponse.code === 1 && userInfoResponse.data) {
+        // 重要：先保存当前本地最新的今日步数（可能包含未上传的模拟步数）
+        const localTodaySteps = this.stateStore.todaySteps
+        console.log('ProfilePage: 本地最新步数:', localTodaySteps)
         
-        promptAction.showToast({
-          message: '✅ 保存成功',
-          duration: 2000
-        });
+        // 更新本地存储的用户信息（但不包括今日步数）
+        await this.stateStore.saveUserInfo(userInfoResponse.data)
+        
+        this.userInfo = userInfoResponse.data
+        
+        // 重要：始终使用本地最新的今日步数，不从后端覆盖
+        this.todaySteps = localTodaySteps
+        
+        this.totalPoints = userInfoResponse.data.totalPoints
+        
+        console.log('ProfilePage: 从后端加载用户数据成功')
+        console.log('用户ID:', this.userInfo.id, '昵称:', this.userInfo.nickname)
+        console.log('今日步数（本地）:', this.todaySteps, '总积分:', this.totalPoints)
       } else {
-        promptAction.showToast({
-          message: response.message,
-          duration: 2000
-        });
+        console.warn('ProfilePage: 后端请求失败，使用本地数据')
+        
+        // 检查是否是认证失败
+        if (userInfoResponse.code === 401 || userInfoResponse.message?.includes('Authentication')) {
+          promptAction.showToast({
+            message: '登录已过期，请重新登录',
+            duration: 2000
+          })
+          setTimeout(async () => {
+            await this.stateStore.clearAllData()
+            router.replaceUrl({
+              url: 'pages/LoginPage'
+            })
+          }, 2000)
+          return
+        }
+        
+        // 降级方案：从本地存储加载
+        const userInfo = await this.stateStore.getUserInfo()
+        this.userInfo = userInfo
+        this.todaySteps = this.stateStore.todaySteps
+        this.totalPoints = userInfo.totalPoints
+        
+        // 如果本地也没有用户信息，才跳转登录
+        if (!userInfo || userInfo.id === 0) {
+          console.warn('ProfilePage: 本地也无用户信息，跳转到登录页')
+          promptAction.showToast({
+            message: '请先登录',
+            duration: 2000
+          })
+          setTimeout(() => {
+            router.replaceUrl({
+              url: 'pages/LoginPage'
+            })
+          }, 2000)
+        }
       }
     } catch (error) {
-      console.error('Failed to save user info:', error);
-      promptAction.showToast({
-        message: '❌ 保存失败，请重试',
-        duration: 2000
-      });
+      console.error('Failed to load user data:', error)
+      
+      // 检查是否是认证错误
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      if (errorMessage.includes('401') || errorMessage.includes('Authentication')) {
+        promptAction.showToast({
+          message: '登录已过期，请重新登录',
+          duration: 2000
+        })
+        setTimeout(async () => {
+          await this.stateStore.clearAllData()
+          router.replaceUrl({
+            url: 'pages/LoginPage'
+          })
+        }, 2000)
+        return
+      }
+      
+      // 降级方案：从本地存储加载
+      try {
+        const userInfo = await this.stateStore.getUserInfo()
+        this.userInfo = userInfo
+        this.todaySteps = this.stateStore.todaySteps
+        this.totalPoints = userInfo.totalPoints
+      } catch (localError) {
+        console.error('Failed to load local user data:', localError)
+      }
     }
   }
 
-  // 修改密码
+  private async editProfile(): Promise<void> {
+    try {
+      if (!this.userInfo) {
+        promptAction.showToast({
+          message: '请先登录',
+          duration: 2000
+        })
+        return
+      }
+
+      // 初始化编辑表单
+      this.editNickname = this.userInfo.nickname || ''
+      this.editSex = this.userInfo.sex || 0
+      this.showEditDialog = true
+    } catch (error) {
+      console.error('Failed to open edit profile dialog:', error)
+      promptAction.showToast({
+        message: '打开编辑对话框失败',
+        duration: 2000
+      })
+    }
+  }
+
   private async changePassword(): Promise<void> {
+    try {
+      // 初始化密码表单
+      this.oldPassword = ''
+      this.newPassword = ''
+      this.confirmPassword = ''
+      this.showPasswordDialog = true
+    } catch (error) {
+      console.error('Failed to open password dialog:', error)
+      promptAction.showToast({
+        message: '打开修改密码对话框失败',
+        duration: 2000
+      })
+    }
+  }
+
+  private async updateUserProfile(nickname: string, sex: number): Promise<void> {
+    try {
+      const response = await this.apiClient.updateUserInfo({
+        nickname: nickname,
+        sex: sex
+      })
+
+      if (response.code === 1) {
+        // 更新本地存储
+        if (this.userInfo) {
+          const updatedUserInfo: UserInfo = {
+            id: this.userInfo.id,
+            username: this.userInfo.username,
+            email: this.userInfo.email,
+            nickname: nickname,
+            sex: sex,
+            avatar: this.userInfo.avatar,
+            totalSteps: this.userInfo.totalSteps,
+            totalPoints: this.userInfo.totalPoints,
+            remainingSteps: this.userInfo.remainingSteps
+          }
+          await this.stateStore.saveUserInfo(updatedUserInfo)
+          this.userInfo = updatedUserInfo
+        }
+
+        promptAction.showToast({
+          message: '个人信息修改成功',
+          duration: 2000
+        })
+      } else {
+        promptAction.showToast({
+          message: response.message || '修改失败',
+          duration: 2000
+        })
+      }
+    } catch (error) {
+      console.error('Failed to update user profile:', error)
+      promptAction.showToast({
+        message: '修改个人信息失败',
+        duration: 2000
+      })
+    }
+  }
+
+  private async updatePassword(oldPassword: string, newPassword: string): Promise<void> {
+    try {
+      const response = await this.apiClient.updatePassword(oldPassword, newPassword)
+
+      if (response.code === 1) {
+        promptAction.showToast({
+          message: '密码修改成功',
+          duration: 2000
+        })
+      } else {
+        promptAction.showToast({
+          message: response.message || '修改失败',
+          duration: 2000
+        })
+      }
+    } catch (error) {
+      console.error('Failed to update password:', error)
+      promptAction.showToast({
+        message: '修改密码失败',
+        duration: 2000
+      })
+    }
+  }
+
+  private async logout(): Promise<void> {
+    try {
+      // 清除本地存储
+      await this.stateStore.clearAllData()
+      
+      // 跳转到登录页
+      router.clear()
+      router.pushUrl({
+        url: 'pages/LoginPage'
+      })
+    } catch (error) {
+      console.error('Failed to logout:', error)
+    }
+  }
+  
+  // 确认更新个人信息
+  private async confirmUpdateProfile(): Promise<void> {
+    if (!this.editNickname || this.editNickname.trim() === '') {
+      promptAction.showToast({
+        message: '昵称不能为空',
+        duration: 2000
+      })
+      return
+    }
+    
+    try {
+      const response = await this.apiClient.updateUserInfo({
+        nickname: this.editNickname,
+        sex: this.editSex
+      })
+
+      if (response.code === 1) {
+        // 更新本地存储
+        if (this.userInfo) {
+          const updatedUserInfo: UserInfo = {
+            id: this.userInfo.id,
+            username: this.userInfo.username,
+            email: this.userInfo.email,
+            nickname: this.editNickname,
+            sex: this.editSex,
+            avatar: this.userInfo.avatar,
+            totalSteps: this.userInfo.totalSteps,
+            totalPoints: this.userInfo.totalPoints,
+            remainingSteps: this.userInfo.remainingSteps
+          }
+          await this.stateStore.saveUserInfo(updatedUserInfo)
+          this.userInfo = updatedUserInfo
+        }
+
+        this.showEditDialog = false
+        
+        promptAction.showToast({
+          message: '个人信息修改成功',
+          duration: 2000
+        })
+      } else {
+        promptAction.showToast({
+          message: response.message || '修改失败',
+          duration: 2000
+        })
+      }
+    } catch (error) {
+      console.error('Failed to update user profile:', error)
+      promptAction.showToast({
+        message: '修改个人信息失败',
+        duration: 2000
+      })
+    }
+  }
+  
+  // 确认修改密码
+  private async confirmPasswordChange(): Promise<void> {
     if (!this.oldPassword || !this.newPassword || !this.confirmPassword) {
       promptAction.showToast({
-        message: '请填写完整信息',
+        message: '请填写所有字段',
         duration: 2000
       })
       return
     }
-
-    if (this.newPassword.length < 6) {
-      promptAction.showToast({
-        message: '密码长度不能少于 6 位',
-        duration: 2000
-      })
-      return
-    }
-
+    
     if (this.newPassword !== this.confirmPassword) {
       promptAction.showToast({
         message: '两次输入的密码不一致',
@@ -535,55 +541,276 @@ struct ProfilePage {
       })
       return
     }
-
+    
+    if (this.newPassword.length < 6) {
+      promptAction.showToast({
+        message: '密码长度至少6位',
+        duration: 2000
+      })
+      return
+    }
+    
     try {
       const response = await this.apiClient.updatePassword(this.oldPassword, this.newPassword)
-      
+
       if (response.code === 1) {
-        promptAction.showToast({
-          message: '✅ 密码修改成功',
-          duration: 2000
-        })
-        
         this.showPasswordDialog = false
         this.oldPassword = ''
         this.newPassword = ''
         this.confirmPassword = ''
+        
+        promptAction.showToast({
+          message: '密码修改成功，请重新登录',
+          duration: 2000
+        })
+        
+        // 密码修改成功后，清除本地数据并跳转到登录页
+        setTimeout(async () => {
+          await this.stateStore.clearAllData()
+          router.clear()
+          router.pushUrl({
+            url: 'pages/LoginPage'
+          })
+        }, 2000)
       } else {
         promptAction.showToast({
-          message: response.message,
+          message: response.message || '修改失败',
           duration: 2000
         })
       }
     } catch (error) {
-      console.error('Failed to change password:', error)
+      console.error('Failed to update password:', error)
       promptAction.showToast({
-        message: '❌ 修改失败，请重试',
+        message: '修改密码失败',
         duration: 2000
       })
     }
   }
+  
+  // 构建编辑个人信息对话框
+  @Builder buildEditProfileDialog() {
+    Stack() {
+      // 遮罩层
+      Column() {
+        Blank()
+      }
+      .width('100%')
+      .height('100%')
+      .backgroundColor('#00000040')
+      .onClick(() => {
+        this.showEditDialog = false
+      })
 
-  // 处理退出登录
-  private async handleLogout(): Promise<void> {
-    try {
-      await this.stateStore.logout()
-      
-      promptAction.showToast({
-        message: '👋 已退出登录',
-        duration: 2000
-      })
-      
-      router.clear()
-      router.pushUrl({
-        url: 'pages/LoginPage'
-      })
-    } catch (error) {
-      console.error('Failed to logout:', error)
-      promptAction.showToast({
-        message: '❌ 退出失败，请重试',
-        duration: 2000
-      })
+      // 对话框内容
+      Column() {
+        Text('修改个人信息')
+          .fontSize(AppFonts.fontSizeXl)
+          .fontWeight(AppFonts.fontWeightBold)
+          .fontColor(AppColors.titleColor)
+          .margin({ bottom: AppSpacing.spaceLg })
+
+        // 昵称输入
+        Text('昵称')
+          .fontSize(AppFonts.fontSizeBase)
+          .fontColor(AppColors.textColor)
+          .alignSelf(ItemAlign.Start)
+          .margin({ bottom: 8 })
+
+        TextInput({ placeholder: '请输入昵称', text: this.editNickname })
+          .width('100%')
+          .height(52)
+          .borderRadius(AppBorderRadius.radiusBase)
+          .backgroundColor(AppColors.bgColor)
+          .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
+          .fontSize(AppFonts.fontSizeBase)
+          .fontColor(AppColors.textColor)
+          .border({ width: 1, color: AppColors.borderColor })
+          .onChange((value: string) => { this.editNickname = value })
+          .margin({ bottom: AppSpacing.spaceLg })
+
+        // 性别选择
+        Text('性别')
+          .fontSize(AppFonts.fontSizeBase)
+          .fontColor(AppColors.textColor)
+          .alignSelf(ItemAlign.Start)
+          .margin({ bottom: 8 })
+
+        Row() {
+          Button('女')
+            .layoutWeight(1)
+            .height(48)
+            .fontSize(AppFonts.fontSizeBase)
+            .backgroundColor(this.editSex === 0 ? AppColors.primaryColor : AppColors.bgColor)
+            .fontColor(this.editSex === 0 ? Color.White : AppColors.textColor)
+            .borderRadius(AppBorderRadius.radiusBase)
+            .border({ width: 1, color: AppColors.borderColor })
+            .margin({ right: AppSpacing.spaceLg })
+            .onClick(() => { this.editSex = 0 })
+
+          Button('男')
+            .layoutWeight(1)
+            .height(48)
+            .fontSize(AppFonts.fontSizeBase)
+            .backgroundColor(this.editSex === 1 ? AppColors.primaryColor : AppColors.bgColor)
+            .fontColor(this.editSex === 1 ? Color.White : AppColors.textColor)
+            .borderRadius(AppBorderRadius.radiusBase)
+            .border({ width: 1, color: AppColors.borderColor })
+            .onClick(() => { this.editSex = 1 })
+        }
+        .width('100%')
+        .margin({ bottom: AppSpacing.space3Xl })
+
+        // 操作按钮
+        Row() {
+          Button('取消')
+            .layoutWeight(1)
+            .height(48)
+            .fontSize(AppFonts.fontSizeBase)
+            .backgroundColor(AppColors.bgColor)
+            .fontColor(AppColors.textColor)
+            .borderRadius(AppBorderRadius.radiusBase)
+            .border({ width: 1, color: AppColors.borderColor })
+            .onClick(() => { this.showEditDialog = false })
+            .margin({ right: AppSpacing.spaceLg })
+
+          Button('保存')
+            .layoutWeight(1)
+            .height(48)
+            .fontSize(AppFonts.fontSizeBase)
+            .backgroundColor(AppColors.primaryColor)
+            .fontColor(Color.White)
+            .borderRadius(AppBorderRadius.radiusBase)
+            .onClick(() => { this.confirmUpdateProfile() })
+        }
+        .width('100%')
+      }
+      .width('85%')
+      .padding(AppSpacing.space3Xl)
+      .backgroundColor(Color.White)
+      .borderRadius(AppBorderRadius.radius2Xl)
+      .shadow(AppShadows.shadowLg)
+      .alignSelf(ItemAlign.Center)
     }
+    .width('100%')
+    .height('100%')
+    .position({ x: 0, y: 0 })
+  }
+  
+  // 构建修改密码对话框
+  @Builder buildPasswordDialog() {
+    Stack() {
+      // 遮罩层
+      Column() {
+        Blank()
+      }
+      .width('100%')
+      .height('100%')
+      .backgroundColor('#00000040')
+      .onClick(() => {
+        this.showPasswordDialog = false
+      })
+
+      // 对话框内容
+      Column() {
+        Text('修改密码')
+          .fontSize(AppFonts.fontSizeXl)
+          .fontWeight(AppFonts.fontWeightBold)
+          .fontColor(AppColors.titleColor)
+          .margin({ bottom: AppSpacing.spaceLg })
+
+        // 旧密码
+        Text('当前密码')
+          .fontSize(AppFonts.fontSizeBase)
+          .fontColor(AppColors.textColor)
+          .alignSelf(ItemAlign.Start)
+          .margin({ bottom: 8 })
+
+        TextInput({ placeholder: '请输入当前密码', text: this.oldPassword })
+          .width('100%')
+          .height(52)
+          .borderRadius(AppBorderRadius.radiusBase)
+          .backgroundColor(AppColors.bgColor)
+          .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
+          .fontSize(AppFonts.fontSizeBase)
+          .fontColor(AppColors.textColor)
+          .border({ width: 1, color: AppColors.borderColor })
+          .type(InputType.Password)
+          .onChange((value: string) => { this.oldPassword = value })
+          .margin({ bottom: AppSpacing.spaceLg })
+
+        // 新密码
+        Text('新密码')
+          .fontSize(AppFonts.fontSizeBase)
+          .fontColor(AppColors.textColor)
+          .alignSelf(ItemAlign.Start)
+          .margin({ bottom: 8 })
+
+        TextInput({ placeholder: '请输入新密码（至少6位）', text: this.newPassword })
+          .width('100%')
+          .height(52)
+          .borderRadius(AppBorderRadius.radiusBase)
+          .backgroundColor(AppColors.bgColor)
+          .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
+          .fontSize(AppFonts.fontSizeBase)
+          .fontColor(AppColors.textColor)
+          .border({ width: 1, color: AppColors.borderColor })
+          .type(InputType.Password)
+          .onChange((value: string) => { this.newPassword = value })
+          .margin({ bottom: AppSpacing.spaceLg })
+
+        // 确认密码
+        Text('确认新密码')
+          .fontSize(AppFonts.fontSizeBase)
+          .fontColor(AppColors.textColor)
+          .alignSelf(ItemAlign.Start)
+          .margin({ bottom: 8 })
+
+        TextInput({ placeholder: '请再次输入新密码', text: this.confirmPassword })
+          .width('100%')
+          .height(52)
+          .borderRadius(AppBorderRadius.radiusBase)
+          .backgroundColor(AppColors.bgColor)
+          .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
+          .fontSize(AppFonts.fontSizeBase)
+          .fontColor(AppColors.textColor)
+          .border({ width: 1, color: AppColors.borderColor })
+          .type(InputType.Password)
+          .onChange((value: string) => { this.confirmPassword = value })
+          .margin({ bottom: AppSpacing.space3Xl })
+
+        // 操作按钮
+        Row() {
+          Button('取消')
+            .layoutWeight(1)
+            .height(48)
+            .fontSize(AppFonts.fontSizeBase)
+            .backgroundColor(AppColors.bgColor)
+            .fontColor(AppColors.textColor)
+            .borderRadius(AppBorderRadius.radiusBase)
+            .border({ width: 1, color: AppColors.borderColor })
+            .onClick(() => { this.showPasswordDialog = false })
+            .margin({ right: AppSpacing.spaceLg })
+
+          Button('确认修改')
+            .layoutWeight(1)
+            .height(48)
+            .fontSize(AppFonts.fontSizeBase)
+            .backgroundColor(AppColors.primaryColor)
+            .fontColor(Color.White)
+            .borderRadius(AppBorderRadius.radiusBase)
+            .onClick(() => { this.confirmPasswordChange() })
+        }
+        .width('100%')
+      }
+      .width('85%')
+      .padding(AppSpacing.space3Xl)
+      .backgroundColor(Color.White)
+      .borderRadius(AppBorderRadius.radius2Xl)
+      .shadow(AppShadows.shadowLg)
+      .alignSelf(ItemAlign.Center)
+    }
+    .width('100%')
+    .height('100%')
+    .position({ x: 0, y: 0 })
   }
 }

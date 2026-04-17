@@ -1,25 +1,30 @@
 import router from '@ohos.router'
 import promptAction from '@ohos.promptAction'
 import ApiClient from '../services/ApiClient'
+import StateStore from '../services/StateStore'
 import { ExchangeRecord } from '../types/common'
 import {
   AppColors,
   AppFonts,
   AppSpacing,
   AppBorderRadius,
-  AppIcons
+  AppIcons,
+  AppShadows
 } from '../config/DesignSystem'
-import AppShadows from '../config/AppShadows'
 
+@Entry
 @Component
 export struct RecordPage {
   @State exchangeRecords: ExchangeRecord[] = []
   @State selectedFilter: string = 'all' // all, points, steps
   @State isLoading: boolean = true
-  
+
   private apiClient = ApiClient
+  private stateStore = StateStore
 
   aboutToAppear() {
+    // 确保ApiClient有正确的Token
+    this.syncTokenToApiClient()
     this.loadExchangeRecords()
   }
 
@@ -27,7 +32,7 @@ export struct RecordPage {
     Column() {
       // 筛选器头部
       this.buildFilterHeader()
-      
+
       Scroll() {
         Column() {
           if (this.isLoading) {
@@ -36,7 +41,7 @@ export struct RecordPage {
                 .width(40)
                 .height(40)
                 .color(AppColors.primaryColor)
-              
+
               Text('加载中...')
                 .fontSize(AppFonts.fontSizeBase)
                 .fontColor(AppColors.textSecondary)
@@ -70,13 +75,13 @@ export struct RecordPage {
 
   @Builder buildFilterHeader() {
     Row() {
-      Text('兑换记录')
+      Text('活动记录')
         .fontSize(AppFonts.fontSize2Xl)
         .fontColor(AppColors.titleColor)
         .fontWeight(AppFonts.fontWeightBold)
-      
+
       Blank()
-      
+
       Row() {
         Button('全部')
           .fontSize(AppFonts.fontSizeSm)
@@ -119,12 +124,12 @@ export struct RecordPage {
     Row() {
       // 图标
       Column() {
-        Text(record.type === 'points' ? '🔄' : '👣')
+        Text(this.getRecordIcon(record))
           .fontSize(24)
       }
       .width(40)
       .height(40)
-      .backgroundColor(record.type === 'points' ? AppColors.successLight : AppColors.primaryLight)
+      .backgroundColor(this.getRecordIconBg(record))
       .borderRadius(AppBorderRadius.radiusFull)
       .justifyContent(FlexAlign.Center)
       .alignItems(HorizontalAlign.Center)
@@ -132,7 +137,7 @@ export struct RecordPage {
 
       // 内容
       Column() {
-        Text(record.type === 'points' ? '积分兑换' : '步数记录')
+        Text(this.getRecordTitle(record))
           .fontSize(AppFonts.fontSizeBase)
           .fontColor(AppColors.textColor)
           .fontWeight(AppFonts.fontWeightMedium)
@@ -148,12 +153,12 @@ export struct RecordPage {
 
       // 数值
       Column() {
-        Text(record.type === 'points' ? `+${record.points}` : `${record.steps}`)
+        Text(this.getRecordValue(record))
           .fontSize(AppFonts.fontSizeBase)
-          .fontColor(record.type === 'points' ? AppColors.successColor : AppColors.primaryColor)
+          .fontColor(this.getRecordValueColor(record))
           .fontWeight(AppFonts.fontWeightBold)
 
-        Text(record.type === 'points' ? '积分' : '步')
+        Text(this.getRecordUnit(record))
           .fontSize(AppFonts.fontSizeXs)
           .fontColor(AppColors.textSecondary)
       }
@@ -165,57 +170,41 @@ export struct RecordPage {
     .borderRadius(AppBorderRadius.radiusBase)
   }
 
+  // 同步Token到ApiClient
+  private async syncTokenToApiClient(): Promise<void> {
+    const token = this.stateStore.getToken()
+    if (token) {
+      await this.apiClient.setToken(token)
+      console.log('RecordPage: Token已同步到ApiClient，长度:', token.length)
+    } else {
+      console.warn('RecordPage: StateStore中没有找到Token')
+    }
+  }
+
   private async loadExchangeRecords(): Promise<void> {
     this.isLoading = true
 
     try {
-      const response = await this.apiClient.getAllExchangeRecords()
-      if (response.code === 1) {
-        this.exchangeRecords = response.data
+      // 调用真实API获取兑换记录
+      const response = await this.apiClient.getExchangeRecords(1, 50)
+
+      if (response.code === 1 && response.data) {
+        const records = response.data as ExchangeRecord[]
+
+        // 按时间排序（最新的在前）
+        this.exchangeRecords = records.sort((a, b) =>
+        new Date(b.exchangeTime || '').getTime() - new Date(a.exchangeTime || '').getTime()
+        )
+
+        console.log('成功加载兑换记录:', this.exchangeRecords.length, '条')
+      } else {
+        console.error('获取兑换记录失败:', response.message)
+        this.exchangeRecords = []
       }
     } catch (error) {
-      // 模拟数据
-      await this.delay(500)
-      const mockRecords: ExchangeRecord[] = [
-        {
-          id: 1,
-          productId: 1,
-          productName: '运动手环',
-          points: 5000,
-          status: 1,
-          exchangeTime: new Date(Date.now() - 86400000 * 5).toISOString(),
-          type: 'points',
-          steps: 0,
-          description: '已发货'
-        } as ExchangeRecord,
-        {
-          id: 2,
-          productId: 3,
-          productName: '运动毛巾',
-          points: 800,
-          status: 2,
-          exchangeTime: new Date(Date.now() - 86400000 * 10).toISOString(),
-          type: 'points',
-          steps: 0,
-          description: '已完成'
-        } as ExchangeRecord,
-        {
-          id: 3,
-          productId: 0,
-          productName: '',
-          points: 0,
-          status: 1,
-          exchangeTime: new Date(Date.now() - 86400000 * 2).toISOString(),
-          type: 'steps',
-          steps: 5000,
-          description: '步数记录'
-        } as ExchangeRecord
-      ]
-
-      // 按时间排序
-      this.exchangeRecords = mockRecords.sort((a, b) =>
-        new Date(b.exchangeTime || '').getTime() - new Date(a.exchangeTime || '').getTime()
-      )
+      console.error('Failed to load exchange records:', error)
+      // 出错时使用空数组
+      this.exchangeRecords = []
     }
 
     this.isLoading = false
@@ -225,7 +214,71 @@ export struct RecordPage {
     if (this.selectedFilter === 'all') {
       return this.exchangeRecords
     }
-    return this.exchangeRecords.filter(record => record.type === this.selectedFilter)
+    // 根据类型过滤：points对应points_exchange，steps对应step_record
+    if (this.selectedFilter === 'points') {
+      return this.exchangeRecords.filter(record =>
+      record.type === 'points_exchange' || record.type === 'points'
+      )
+    } else if (this.selectedFilter === 'steps') {
+      return this.exchangeRecords.filter(record =>
+      record.type === 'step_record' || record.type === 'steps'
+      )
+    }
+    return this.exchangeRecords
+  }
+
+  // 获取记录图标
+  private getRecordIcon(record: ExchangeRecord): string {
+    if (record.type === 'points_exchange' || record.type === 'points') {
+      return '🔄'
+    } else {
+      return '👣'
+    }
+  }
+
+  // 获取图标背景色
+  private getRecordIconBg(record: ExchangeRecord): ResourceColor {
+    if (record.type === 'points_exchange' || record.type === 'points') {
+      return AppColors.successLight
+    } else {
+      return AppColors.primaryLight
+    }
+  }
+
+  // 获取记录标题
+  private getRecordTitle(record: ExchangeRecord): string {
+    if (record.type === 'points_exchange' || record.type === 'points') {
+      return '积分兑换'
+    } else {
+      return record.description || '步数记录'
+    }
+  }
+
+  // 获取记录数值
+  private getRecordValue(record: ExchangeRecord): string {
+    if (record.type === 'points_exchange' || record.type === 'points') {
+      return `+${record.points}`
+    } else {
+      return `${record.steps}`
+    }
+  }
+
+  // 获取数值颜色
+  private getRecordValueColor(record: ExchangeRecord): ResourceColor {
+    if (record.type === 'points_exchange' || record.type === 'points') {
+      return AppColors.successColor
+    } else {
+      return AppColors.primaryColor
+    }
+  }
+
+  // 获取单位
+  private getRecordUnit(record: ExchangeRecord): string {
+    if (record.type === 'points_exchange' || record.type === 'points') {
+      return '积分'
+    } else {
+      return '步'
+    }
   }
 
   private formatDateTime(dateTimeStr: string | undefined): string {

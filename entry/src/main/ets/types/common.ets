@@ -94,6 +94,7 @@ export class LoginResponse {
 
 // 注册请求
 export interface RegisterRequest {
+  username: string;
   email: string;
   verification: string;
 }
@@ -150,6 +151,16 @@ export interface Product {
   category?: string;
 }
 
+// 扩展商品信息（用于商城页面）
+export interface ExtendedProduct extends Product {
+  isRecommended?: boolean;
+  discount?: number;
+  originalPoints?: number;
+  tags?: string[];
+  rating?: number;
+  reviews?: number;
+}
+
 // 兑换记录
 export interface ExchangeRecord {
   id: number;
@@ -179,4 +190,113 @@ export interface PageData<T> {
   total: number;
   page: number;
   pageSize: number;
+}
+
+// ========== 新增接口定义 ==========
+
+// 3.1 修改个人信息请求
+export interface UpdateUserInfoRequest {
+  nickname?: string;
+  sex?: number; // 1:男，2:女
+  avatar?: string;
+}
+
+// 3.2 修改密码请求
+export interface UpdatePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
+// 3.3 积分查询响应
+export interface PointsResponse {
+  totalPoints: number;
+}
+
+// 3.4 步数兑换积分请求
+export interface ExchangeStepsRequest {
+  stepCount: number;
+}
+
+// 3.4 步数兑换积分响应
+export interface ExchangeStepsResponse {
+  earnedPoints: number;
+  remainingStep: number;
+}
+
+// 积分兑换规则
+export interface PointRule {
+  id: number;
+  ruleName: string;
+  stepsRequired: number;
+  pointsAwarded: number;
+  isActive: number; // 1:启用, 0:禁用
+}
+
+// 兑换预览结果
+export interface ExchangePreview {
+  inputSteps: number;
+  totalEarnedPoints: number;
+  remainingSteps: number;
+  ruleDetails: RuleDetail[];
+}
+
+// 规则详情
+export interface RuleDetail {
+  ruleName: string;
+  stepsRequired: number;
+  pointsAwarded: number;
+  exchangeCount: number;
+  earnedPoints: number;
+}
+
+// 3.5 手动上传步数请求
+export interface UploadStepsRequest {
+  stepCount: number;
+  recordDate?: string;
+}
+
+// 3.6 排行榜响应
+export interface RankingsResponse {
+  total: number;
+  list: RankingItem[];
+}
+
+// 每日步数统计项
+export interface DailyStepStatistic {
+  recordDate: string;
+  stepCount: number;
+}
+
+// 3.7 步数统计响应
+export interface StepsStatisticsResponse {
+  statistics: DailyStepStatistic[];
+  totalSteps: number;
+  averageSteps: number;
+  maxSteps: number;
+  minSteps: number;
+}
+
+// 后端返回的用户信息接口（下划线命名法）
+export interface BackendUserInfo {
+  id: number;
+  username: string;
+  password?: string;
+  email: string;
+  nickname: string;
+  sex?: number;
+  avatar?: string;
+  total_points: number;
+  total_step: number;
+  remaining_step: number;
+  max_daily_steps?: number;
+  is_deleted?: number;
+  create_time?: string;
+  update_time?: string;
+}
+
+// 后端返回的登录响应接口
+export interface BackendLoginResponse {
+  token: string;
+  userInfo: BackendUserInfo;
+  expiresIn?: number;
 }

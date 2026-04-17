@@ -1,75 +1,59 @@
-import { AbilityConstant, ConfigurationConstant, UIAbility, Want } from '@kit.AbilityKit';
-import { hilog } from '@kit.PerformanceAnalysisKit';
-import { window } from '@kit.ArkUI';
+import { UIAbility, AbilityConstant, Want } from '@kit.AbilityKit'
+import window from '@ohos.window'
 import StateStore from '../services/StateStore'
-import StepCounterService from '../services/StepCounterService'
+import { BusinessError } from '@ohos.base'
 
-const DOMAIN = 0x0000;
-
+/**
+ * 应用主能力
+ */
 export default class EntryAbility extends UIAbility {
-  private stateStore = StateStore
-  private stepService = StepCounterService
-
-  async onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): Promise<void> {
-    try {
-      this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
-    } catch (err) {
-      const errorObj = err as Error | Record<string, string | number | boolean>
-      hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(errorObj));
-    }
+  onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    console.info('EntryAbility onCreate')
     
-    // 初始化状态存储
-    await this.stateStore.initialize(this.context)
-    
-    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
+    // 初始化StateStore
+    this.initializeStateStore()
   }
 
   onDestroy(): void {
-    // 停止步数监控
-    this.stepService.stopStepMonitoring()
-    
-    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onDestroy');
+    console.info('EntryAbility onDestroy')
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
-    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
+    console.info('EntryAbility onWindowStageCreate')
 
-    // 根据登录状态决定初始页面
-    const initialPage = this.stateStore.isLoggedIn ? 'pages/MainPage' : 'pages/LoginPage'
-
-    windowStage.loadContent(initialPage, (err) => {
-      if (err.code) {
-        hilog.error(DOMAIN, 'testTag', 'Failed to load the content. Cause: %{public}s', JSON.stringify(err));
-        return;
+    // 设置主窗口
+    windowStage.loadContent('pages/LoginPage', (err: BusinessError) => {
+      if (err) {
+        console.error('Failed to load the content. Cause: ' + JSON.stringify(err))
+        return
       }
-      hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
-    });
+      console.info('Succeeded in loading the content.')
+    })
   }
 
   onWindowStageDestroy(): void {
-    // Main window is destroyed, release UI related resources
-    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageDestroy');
+    console.info('EntryAbility onWindowStageDestroy')
   }
 
   onForeground(): void {
-    // Ability has brought to foreground
-    // 应用回到前台时恢复步数监控
-    if (this.stateStore.isLoggedIn) {
-      this.stepService.startStepMonitoring((steps: number) => {
-        // 保存步数数据
-      const lastUpdate = new Date().toISOString()
-      this.stateStore.saveStepData(steps, lastUpdate)
-      })
-    }
-    
-    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onForeground');
+    console.info('EntryAbility onForeground')
   }
 
   onBackground(): void {
-    // Ability has back to background
-    // 应用进入后台时停止步数监控以节省电量
-    this.stepService.stopStepMonitoring()
-    
-    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onBackground');
+    console.info('EntryAbility onBackground')
+  }
+
+  // 初始化StateStore
+  private async initializeStateStore(): Promise<void> {
+    try {
+      const success = await StateStore.initialize(this.context)
+      if (success) {
+        console.info('StateStore initialized successfully')
+      } else {
+        console.error('Failed to initialize StateStore')
+      }
+    } catch (error) {
+      console.error('Error initializing StateStore:', error)
+    }
   }
 }

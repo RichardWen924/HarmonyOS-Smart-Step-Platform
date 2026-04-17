@@ -6,9 +6,9 @@ export struct LineChart {
   @Prop data: number[] = []
   @Prop labels: string[] = []
   @Prop chartHeight: number = 200
-  @Prop lineColor: string = AppColors.primaryColor
-  @Prop pointColor: string = AppColors.warningColor
-  @Prop gridColor: string = AppColors.borderColor
+  @Prop lineColor: Color = AppColors.primaryColor
+  @Prop pointColor: Color = AppColors.warningColor
+  @Prop gridColor: Color = AppColors.borderColor
   
   private settings: RenderingContextSettings = new RenderingContextSettings(true)
   private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings)

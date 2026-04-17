@@ -31,13 +31,13 @@ export class UserInfoImpl implements UserInfo {
   remainingSteps: number = 0
 
   constructor(
-    id: number = 0, 
-    username: string = '', 
-    email: string = '', 
-    nickname: string = '', 
+    id: number = 0,
+    username: string = '',
+    email: string = '',
+    nickname: string = '',
     sex: number = 0,
-    totalSteps: number = 0, 
-    totalPoints: number = 0, 
+    totalSteps: number = 0,
+    totalPoints: number = 0,
     remainingSteps: number = 0
   ) {
     this.id = id
@@ -136,7 +136,7 @@ class StateStore {
   private static instance: StateStore = new StateStore()
   private preferences: preferences.Preferences | null = null
   private isInitialized: boolean = false
-  
+
   // 应用状态 - 使用 @Observed 装饰器以便响应式更新
   isLoggedIn: boolean = false
   currentSteps: number = 0
@@ -144,7 +144,7 @@ class StateStore {
   userInfo: UserInfo = new UserInfoImpl()
   stepStatistics: StepStatistics = new StepStatisticsImpl()
   permissionStatus: PermissionStatus = new PermissionStatusImpl()
-  
+
   // Token 管理
   private token: string = ''
 
@@ -164,19 +164,22 @@ class StateStore {
       console.log('StateStore already initialized')
       return true
     }
-    
+
     try {
       if (!context) {
         console.error('Context is null')
         return false
       }
-      
+
       this.preferences = await preferences.getPreferences(context, PREF_NAME)
       this.isInitialized = true
       console.log('StateStore initialized successfully')
-      
+
       // 自动加载已保存的数据
       await this.loadSavedData()
+
+      // 加载 Token
+      await this.loadToken()
       return true
     } catch (error) {
       const errorMessage = this.getErrorMessage(error as Error | string | Record<string, string>)
@@ -188,14 +191,14 @@ class StateStore {
   // 加载已保存的数据
   private async loadSavedData(): Promise<void> {
     if (!this.preferences) return
-    
+
     try {
       // 加载用户信息
-      const id = await this.preferences.get('user_id', 0) as number
+      const id = await this.preferences.get('user-id', 0) as number
       if (id > 0) {
         await this.getUserInfo()
       }
-      
+
       // 加载步数数据
       await this.getStepData()
     } catch (error) {
@@ -204,13 +207,48 @@ class StateStore {
   }
 
   // 设置 Token
-  setToken(token: string): void {
-    this.token = token
+  async setToken(token: string): Promise<boolean> {
+    if (!await this.ensureInitialized()) {
+      return false
+    }
+
+    try {
+      this.token = token
+      await this.preferences?.put('user_token', token)
+      await this.preferences?.flush()
+      console.log('Token saved to preferences')
+      return true
+    } catch (error) {
+      console.error('Failed to save token:', error)
+      return false
+    }
   }
 
   // 获取 Token
   getToken(): string {
     return this.token
+  }
+
+  // 获取当前用户ID
+  getUserId(): number {
+    return this.userInfo.id
+  }
+
+  // 从持久化存储加载 Token
+  private async loadToken(): Promise<void> {
+    if (!await this.ensureInitialized()) {
+      return
+    }
+
+    try {
+      const savedToken = await this.preferences?.get('user_token', '') as string
+      if (savedToken) {
+        this.token = savedToken
+        console.log('Token loaded from preferences')
+      }
+    } catch (error) {
+      console.error('Failed to load token:', error)
+    }
   }
 
   // 确保 preferences 已初始化（内部使用）
@@ -238,7 +276,7 @@ class StateStore {
       await this.preferences?.put('total_points', userInfo.totalPoints)
       await this.preferences?.put('remaining_steps', userInfo.remainingSteps)
       await this.preferences?.flush()
-      
+
       this.userInfo = userInfo
       this.isLoggedIn = true
       return true
@@ -264,7 +302,7 @@ class StateStore {
       const totalSteps = await this.preferences?.get('total_steps', 0) as number
       const totalPoints = await this.preferences?.get('total_points', 0) as number
       const remainingSteps = await this.preferences?.get('remaining_steps', 0) as number
-      
+
       const userInfo = new UserInfoImpl(id, username, email, nickname, sex, totalSteps, totalPoints, remainingSteps)
       this.userInfo = userInfo
       this.isLoggedIn = id > 0
@@ -287,7 +325,7 @@ class StateStore {
       await this.preferences?.put('today_steps', steps)
       await this.preferences?.put('last_step_update', lastUpdate)
       await this.preferences?.flush()
-      
+
       this.currentSteps = steps
       this.todaySteps = steps
       return true
@@ -308,7 +346,7 @@ class StateStore {
       const steps = await this.preferences?.get('current_steps', 0) as number
       const todaySteps = await this.preferences?.get('today_steps', 0) as number
       const lastUpdate = await this.preferences?.get('last_step_update', '') as string
-      
+
       this.currentSteps = steps
       this.todaySteps = todaySteps
       const stepData = new StepData(steps, todaySteps, lastUpdate)
@@ -336,9 +374,32 @@ class StateStore {
 
   // 更新积分
   async updatePoints(totalPoints: number, remainingSteps: number): Promise<boolean> {
-    this.userInfo.totalPoints = totalPoints
-    this.userInfo.remainingSteps = remainingSteps
-    return await this.saveUserInfo(this.userInfo)
+    if (!await this.ensureInitialized()) {
+      return false
+    }
+
+    try {
+      // 先获取最新的用户信息
+      const currentUserInfo = await this.getUserInfo()
+
+      // 更新积分和剩余步数，保留其他字段
+      const updatedUserInfo = new UserInfoImpl(
+        currentUserInfo.id,
+        currentUserInfo.username,
+        currentUserInfo.email,
+        currentUserInfo.nickname,
+        currentUserInfo.sex,
+        currentUserInfo.totalSteps, // 保持总步数不变
+        totalPoints,
+        remainingSteps
+      )
+
+      // 保存更新后的用户信息
+      return await this.saveUserInfo(updatedUserInfo)
+    } catch (error) {
+      console.error('Failed to update points:', error)
+      return false
+    }
   }
 
   // 清除所有数据
@@ -350,7 +411,7 @@ class StateStore {
     try {
       await this.preferences?.clear()
       await this.preferences?.flush()
-      
+
       this.isLoggedIn = false
       this.currentSteps = 0
       this.todaySteps = 0
@@ -358,7 +419,7 @@ class StateStore {
       this.stepStatistics = new StepStatisticsImpl()
       this.permissionStatus = new PermissionStatusImpl()
       this.token = ''
-      
+
       return true
     } catch (error) {
       const errorMessage = this.getErrorMessage(error)
@@ -369,7 +430,14 @@ class StateStore {
 
   // 登录方法
   async login(userInfo: UserInfo, token: string): Promise<boolean> {
-    this.token = token
+    // 保存Token到持久化存储
+    const tokenSaved = await this.setToken(token)
+    if (!tokenSaved) {
+      console.error('Failed to save token during login')
+      return false
+    }
+
+    // 保存用户信息
     return await this.saveUserInfo(userInfo)
   }
 
@@ -378,25 +446,10 @@ class StateStore {
     return await this.clearAllData()
   }
 
-  // 获取步数历史记录（模拟数据）
+  // 获取步数历史记录 - 移除Mock数据，改为空数组返回
   getStepHistory(days: number): StepRecord[] {
-    const history: StepRecord[] = []
-    const today = new Date()
-    
-    for (let i = 0; i < days; i++) {
-      const date = new Date(today)
-      date.setDate(today.getDate() - i)
-      
-      const record = new StepRecordImpl(
-        i,
-        Math.floor(Math.random() * 15000) + 5000,
-        date.toISOString().split('T')[0],
-        date.toISOString()
-      )
-      history.push(record)
-    }
-    
-    return history.reverse()
+    console.log('StateStore: 步数历史记录功能已移除Mock数据，请使用后端API获取真实数据')
+    return []
   }
 
   // 计算统计数据
@@ -404,12 +457,12 @@ class StateStore {
     if (records.length === 0) {
       return new StepStatisticsImpl()
     }
-    
+
     const totalSteps = records.reduce((sum, record) => sum + record.steps, 0)
     const avgSteps = Math.floor(totalSteps / records.length)
     const maxSteps = Math.max(...records.map(r => r.steps))
     const minSteps = Math.min(...records.map(r => r.steps))
-    
+
     const stats = new StepStatisticsImpl(
       records[0]?.steps || 0,
       totalSteps,
@@ -420,7 +473,7 @@ class StateStore {
       minSteps,
       new Date().toISOString()
     )
-    
+
     this.stepStatistics = stats
     return stats
   }

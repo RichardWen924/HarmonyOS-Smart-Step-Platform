@@ -1,176 +1,209 @@
 import promptAction from '@ohos.promptAction'
 import router from '@ohos.router'
-import http from '@ohos.net.http'
-import ApiClient from '../services/ApiClient'
-import AppConfig from '../config/AppConfig'
-import { ApiResponse, LoginResponse } from '../types/common'
+import {
+  AppColors,
+  AppFonts,
+  AppSpacing,
+  AppBorderRadius,
+  AppIcons
+} from '../config/DesignSystem'
+import { NetworkTest, NetworkDiagnosticResult } from '../utils/NetworkTest'
 
 @Entry
 @Component
 struct TestBackendPage {
-  @State testResult: string = '点击按钮开始测试'
-  @State isLoading: boolean = false
-  
-  private apiClient = ApiClient
+  @State testResults: string[] = []
+  @State isTesting: boolean = false
+  @State diagnosticInfo: NetworkDiagnosticResult | null = null
 
   build() {
     Column() {
-      Text('后端连接测试')
-        .fontSize(24)
-        .fontWeight(700)
-        .margin({ bottom: 20 })
+      // 标题栏
+      Row() {
+        Text('后端连接测试')
+          .fontSize(AppFonts.fontSize2Xl)
+          .fontWeight(AppFonts.fontWeightBold)
+          .fontColor(AppColors.titleColor)
+        
+        Blank()
+        
+        Text('返回')
+          .fontSize(AppFonts.fontSizeBase)
+          .fontColor(AppColors.primaryColor)
+          .onClick(() => {
+            router.back()
+          })
+      }
+      .width('100%')
+      .padding({ top: AppSpacing.space3Xl, bottom: AppSpacing.space3Xl })
       
-      Text('测试后端API连接状态')
-        .fontSize(16)
-        .fontColor(0x666666)
-        .margin({ bottom: 10 })
-      
-      Text(`当前模式: ${AppConfig.enableMock ? 'Mock数据模式' : '真实API模式'}`)
-        .fontSize(14)
-        .fontColor(AppConfig.enableMock ? 0xFF9500 : 0x34C759)
-        .fontWeight(600)
-        .margin({ bottom: 30 })
-      
-      Button('测试后端连接')
-        .width('80%')
-        .height(50)
-        .backgroundColor(0x007AFF)
+      // 测试按钮
+      Button(this.isTesting ? '测试中...' : '开始网络诊断')
+        .width('90%')
+        .height(52)
+        .fontSize(AppFonts.fontSizeLg)
+        .fontWeight(AppFonts.fontWeightMedium)
+        .backgroundColor(AppColors.primaryColor)
         .fontColor(Color.White)
-        .borderRadius(10)
-        .enabled(!this.isLoading)
+        .borderRadius(AppBorderRadius.radius2Xl)
+        .enabled(!this.isTesting)
         .onClick(() => {
-          this.testBackendConnection()
+          this.runNetworkTests()
         })
-        .margin({ bottom: 20 })
+        .margin({ bottom: AppSpacing.space3Xl })
       
-      Button('测试登录API')
-        .width('80%')
-        .height(50)
-        .backgroundColor(0x34C759)
-        .fontColor(Color.White)
-        .borderRadius(10)
-        .enabled(!this.isLoading)
-        .onClick(() => {
-          this.testLoginAPI()
-        })
-        .margin({ bottom: 20 })
+      // 测试结果
+      if (this.testResults.length > 0) {
+        Column() {
+          Text('测试结果')
+            .fontSize(AppFonts.fontSizeLg)
+            .fontWeight(AppFonts.fontWeightBold)
+            .fontColor(AppColors.titleColor)
+            .alignSelf(ItemAlign.Start)
+            .margin({ bottom: AppSpacing.spaceLg })
+          
+          Scroll() {
+            Column() {
+              ForEach(this.testResults, (result: string, index: number) => {
+                Row() {
+                  Text(result.includes('✅') ? '✅' : result.includes('❌') ? '❌' : result.includes('⚠️') ? '⚠️' : '•')
+                    .fontSize(AppFonts.fontSizeBase)
+                    .fontColor(result.includes('✅') ? AppColors.successColor : 
+                              result.includes('❌') ? AppColors.errorColor : 
+                              result.includes('⚠️') ? AppColors.warningColor : AppColors.textColor)
+                    .margin({ right: AppSpacing.spaceSm })
+                  
+                  Text(result.replace(/[✅❌⚠️]/g, '').trim())
+                    .fontSize(AppFonts.fontSizeBase)
+                    .fontColor(AppColors.textColor)
+                    .layoutWeight(1)
+                }
+                .width('100%')
+                .padding({ top: AppSpacing.spaceSm, bottom: AppSpacing.spaceSm })
+              })
+            }
+            .width('100%')
+          }
+          .layoutWeight(1)
+          .borderRadius(AppBorderRadius.radiusBase)
+          .backgroundColor(AppColors.bgColor)
+          .padding(AppSpacing.spaceLg)
+        }
+        .width('100%')
+        .layoutWeight(1)
+      } else {
+        // 空状态
+        Column() {
+          Text('📡')
+            .fontSize(64)
+            .fontColor(AppColors.textSecondary)
+            .margin({ bottom: AppSpacing.spaceLg })
+          
+          Text('网络诊断')
+            .fontSize(AppFonts.fontSizeXl)
+            .fontWeight(AppFonts.fontWeightBold)
+            .fontColor(AppColors.titleColor)
+            .margin({ bottom: AppSpacing.spaceSm })
+          
+          Text('点击上方按钮开始测试后端连接状态')
+            .fontSize(AppFonts.fontSizeBase)
+            .fontColor(AppColors.textSecondary)
+            .textAlign(TextAlign.Center)
+        }
+        .width('100%')
+        .layoutWeight(1)
+        .justifyContent(FlexAlign.Center)
+      }
       
-      Button('返回登录页')
-        .width('80%')
-        .height(50)
-        .backgroundColor(0xFF9500)
-        .fontColor(Color.White)
-        .borderRadius(10)
-        .onClick(() => {
-          router.back()
-        })
-        .margin({ bottom: 40 })
-      
-      Text('测试结果:')
-        .fontSize(16)
-        .fontWeight(600)
-        .alignSelf(ItemAlign.Start)
-        .margin({ bottom: 10 })
-      
-      Text(this.testResult)
-        .fontSize(14)
-        .fontColor(0x333333)
-        .textAlign(TextAlign.Start)
-        .width('80%')
-        .padding(10)
-        .backgroundColor(0xF2F2F7)
-        .borderRadius(8)
+      // 诊断信息
+      if (this.diagnosticInfo) {
+        Column() {
+          Text('诊断建议')
+            .fontSize(AppFonts.fontSizeLg)
+            .fontWeight(AppFonts.fontWeightBold)
+            .fontColor(AppColors.titleColor)
+            .alignSelf(ItemAlign.Start)
+            .margin({ bottom: AppSpacing.spaceLg })
+          
+          ForEach(this.diagnosticInfo.suggestions, (suggestion: string, index: number) => {
+            Row() {
+              Text('•')
+                .fontSize(AppFonts.fontSizeBase)
+                .fontColor(AppColors.primaryColor)
+                .margin({ right: AppSpacing.spaceSm })
+              
+              Text(suggestion)
+                .fontSize(AppFonts.fontSizeBase)
+                .fontColor(AppColors.textColor)
+                .layoutWeight(1)
+            }
+            .width('100%')
+            .padding({ top: AppSpacing.spaceXs, bottom: AppSpacing.spaceXs })
+          })
+        }
+        .width('100%')
+        .padding({ top: AppSpacing.space3Xl })
+      }
     }
     .width('100%')
     .height('100%')
-    .padding(20)
-    .justifyContent(FlexAlign.Start)
+    .padding(AppSpacing.space3Xl)
+    .backgroundColor(AppColors.bgCard)
   }
 
-  // 测试后端连接
-  private async testBackendConnection(): Promise<void> {
-    this.isLoading = true
-    this.testResult = '正在测试后端连接...'
+  // 运行网络测试
+  private async runNetworkTests(): Promise<void> {
+    this.isTesting = true
+    this.testResults = []
+    this.diagnosticInfo = null
     
     try {
-      // 直接使用HTTP测试基础连接（不依赖认证）
-      const httpRequest = http.createHttp()
-      const baseUrl = AppConfig.baseUrl.replace('/api', '')
-      const response = await httpRequest.request(`${baseUrl}`, {
-        method: http.RequestMethod.GET,
-        connectTimeout: 8000,
-        readTimeout: 8000
-      })
+      // 添加测试开始信息
+      this.addTestResult('开始网络连接诊断...')
       
-      if (response.responseCode === 200 || response.responseCode === 404) {
-        this.testResult = `✅ 后端连接成功！服务器正在运行（状态码: ${response.responseCode})`
+      // 获取详细诊断信息
+      const diagnostics = await NetworkTest.getNetworkDiagnostics()
+      this.diagnosticInfo = diagnostics
+      
+      // 记录设备网络状态
+      if (diagnostics.deviceNetwork) {
+        this.addTestResult('✅ 设备网络连接正常')
       } else {
-        this.testResult = `⚠️ 后端连接成功但返回异常状态码: ${response.responseCode}`
+        this.addTestResult('❌ 设备网络连接异常')
       }
-    } catch (error) {
-      this.testResult = `❌ 后端连接失败: ${error instanceof Error ? error.message : String(error)}`
       
-      // 提供详细的错误诊断
-      if (error.message.includes('NetworkError')) {
-        this.testResult += '\n💡 可能原因: 后端服务未启动或端口被占用'
-      } else if (error.message.includes('timeout')) {
-        this.testResult += '\n💡 可能原因: 请求超时，检查网络连接'
+      // 记录后端连接状态
+      if (diagnostics.backendConnection) {
+        this.addTestResult('✅ 后端服务连接成功')
+      } else {
+        this.addTestResult('❌ 后端服务连接失败')
       }
-    } finally {
-      this.isLoading = false
-    }
-  }
-
-  // 测试登录API
-  private async testLoginAPI(): Promise<void> {
-    this.isLoading = true
-    this.testResult = '正在测试登录API...'
-    
-    try {
-      // 首先测试API端点是否存在
-      const httpRequest = http.createHttp()
-      const testResponse = await httpRequest.request(`${AppConfig.baseUrl}/user/login`, {
-        method: http.RequestMethod.OPTIONS,
-        connectTimeout: 5000,
-        readTimeout: 5000
-      })
       
-      this.testResult = `✅ API端点存在（状态码: ${testResponse.responseCode})，正在测试登录...`
-      
-      // 使用测试账号进行登录测试
-      const response: ApiResponse<LoginResponse> = await this.apiClient.loginByPassword('zhangsan', '123456')
-      
-      if (response.code === 1) {
-        this.testResult = `✅ 登录API测试成功！\n消息: ${response.message}`
-        if (response.data?.token) {
-          this.testResult += `\nToken: ${response.data.token.substring(0, 20)}...`
+      // 记录API端点状态
+      for (const endpoint of diagnostics.apiEndpoints) {
+        if (endpoint.available) {
+          this.addTestResult(`✅ ${endpoint.endpoint} - 端点可用 (${endpoint.statusCode})`)
+        } else {
+          this.addTestResult(`❌ ${endpoint.endpoint} - 端点不可用`)
         }
-      } else {
-        this.testResult = `⚠️ 登录API返回错误: ${response.message} (错误码: ${response.code})`
       }
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error)
-      this.testResult = `❌ 登录API测试失败: ${errorMsg}`
       
-      // 提供详细的错误诊断
-      if (errorMsg.includes('401')) {
-        this.testResult += '\n💡 可能原因: 账号密码错误或账号不存在'
-        this.testResult += '\n💡 解决方案: 在后端创建测试账号或检查认证逻辑'
-      } else if (errorMsg.includes('404')) {
-        this.testResult += '\n💡 可能原因: API端点不存在'
-        this.testResult += '\n💡 解决方案: 检查后端是否有 /api/auth/login 端点'
-      } else if (errorMsg.includes('500')) {
-        this.testResult += '\n💡 可能原因: 服务器内部错误'
-        this.testResult += '\n💡 解决方案: 检查Spring Boot应用日志'
-      } else if (errorMsg.includes('NetworkError')) {
-        this.testResult += '\n💡 可能原因: 网络连接问题'
+      // 显示总体状态
+      if (diagnostics.backendConnection && diagnostics.apiEndpoints.some(ep => ep.available)) {
+        this.addTestResult('✅ 后端服务状态正常')
+      } else {
+        this.addTestResult('❌ 后端服务存在连接问题')
       }
+      
+    } catch (error) {
+      this.addTestResult(`❌ 测试过程中发生错误: ${error.message}`)
     } finally {
-      this.isLoading = false
+      this.isTesting = false
     }
   }
 
-  aboutToAppear(): void {
-    console.log('TestBackendPage loaded')
+  // 添加测试结果
+  private addTestResult(result: string): void {
+    this.testResults = [...this.testResults, result]
   }
 }
