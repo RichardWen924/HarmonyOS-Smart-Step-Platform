@@ -1,12 +1,7 @@
 package com.hssp.service.mall.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
-import com.hssp.model.mall.po.UserPoints;
-
-public interface UserPointsService extends IService<UserPoints> {
+public interface UserPointsService {
     void exchangePoints(Integer steps, Long userId);
     
     com.hssp.model.user.po.User getUserById(Long userId);
-    
-    UserPoints getUserPoints(Long userId);
 }

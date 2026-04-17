@@ -1,16 +1,13 @@
 package com.hssp.service.mall.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hssp.common.admin.PointRules_Status;
 import com.hssp.model.admin.po.PointRules;
-import com.hssp.model.mall.po.UserPoints;
 import com.hssp.model.user.po.PointsLog;
 import com.hssp.model.user.po.User;
 import com.hssp.service.mall.mapper.PointRulesMapper;
 import com.hssp.service.mall.mapper.PointsLogMapper;
 import com.hssp.service.mall.mapper.UserMapper;
-import com.hssp.service.mall.mapper.UserPointsMapper;
 import com.hssp.service.mall.service.UserPointsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,13 +15,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class UserPointsServiceImpl extends ServiceImpl<UserPointsMapper, UserPoints> implements UserPointsService {
+public class UserPointsServiceImpl implements UserPointsService {
 
     private final PointRulesMapper pointRulesMapper;
     private final UserMapper userMapper;
@@ -149,28 +145,7 @@ public class UserPointsServiceImpl extends ServiceImpl<UserPointsMapper, UserPoi
         
         log.info("========== 积分兑换处理完成 ==========");
         
-        // 2. 查询当前积分记录
-        UserPoints userPoints = baseMapper.selectById(userId);
-        if (userPoints == null) {
-            // 初始化积分记录
-            userPoints = new UserPoints();
-            userPoints.setUserId(userId);
-            userPoints.setTotalPoints(earnedPoints);
-            userPoints.setCumulativePoints(earnedPoints);
-            userPoints.setUpdateTime(new Date());
-            baseMapper.insert(userPoints);
-            log.info("为用户 {} 创建积分记录，初始积分: {}", userId, earnedPoints);
-        } else {
-            // 更新积分记录
-            userPoints.setTotalPoints(userPoints.getTotalPoints() + earnedPoints);
-            userPoints.setCumulativePoints(userPoints.getCumulativePoints() + earnedPoints);
-            userPoints.setUpdateTime(new Date());
-            baseMapper.updateById(userPoints);
-            log.info("更新用户 {} 的积分记录，新增积分: {}, 总积分: {}", 
-                userId, earnedPoints, userPoints.getTotalPoints());
-        }
-        
-        // 3. 创建积分兑换日志记录
+        // 2. 创建积分兑换日志记录
         PointsLog pointsLog = new PointsLog();
         pointsLog.setUserId(userId);
         pointsLog.setBeforeStep(currentRemainingSteps);  // 兑换前的步数
@@ -188,10 +163,5 @@ public class UserPointsServiceImpl extends ServiceImpl<UserPointsMapper, UserPoi
     @Override
     public com.hssp.model.user.po.User getUserById(Long userId) {
         return userMapper.selectById(userId);
-    }
-
-    @Override
-    public UserPoints getUserPoints(Long userId) {
-        return baseMapper.selectById(userId);
     }
 }

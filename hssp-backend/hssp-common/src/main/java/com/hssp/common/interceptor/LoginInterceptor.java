@@ -18,7 +18,7 @@ public class LoginInterceptor implements HandlerInterceptor {
      * 1: 开启校验 (开启安全验证)
      * 0: 关闭校验 (直接跳过验证，使用 Mock 数据)
      */
-    private static final int JWT_SWITCH = 1;
+    private static final int JWT_SWITCH = 1;  // 生产环境开启
 
     /**
      * 关闭 JWT 校验时使用的 Mock 用户 ID
