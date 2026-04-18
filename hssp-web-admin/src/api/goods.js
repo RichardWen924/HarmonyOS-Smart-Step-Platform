@@ -1,12 +1,26 @@
 import request from '../utils/request';
 
 /**
- * 获取商品列表
- * 说明：文档未明确分页参数，这里直接调用获取
+ * 获取商品分页列表
+ * @param {Object} params { current, size }
  */
-export function getGoodsList() {
+export function getGoodsPage(params) {
   return request({
-    url: '/admin/goods/list', // 假设列表接口
+    url: '/admin/goods/page',
+    method: 'get',
+    params: {
+      page: params.current,
+      size: params.size
+    }
+  });
+}
+
+/**
+ * 根据 ID 获取商品详情
+ */
+export function getGoodsById(id) {
+  return request({
+    url: `/admin/goods/${id}`,
     method: 'get'
   });
 }

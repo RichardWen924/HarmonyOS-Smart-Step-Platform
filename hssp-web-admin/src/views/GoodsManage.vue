@@ -108,6 +108,18 @@
               </template>
             </el-table-column>
           </el-table>
+
+          <div class="pagination-wrapper">
+            <el-pagination
+              v-model:current-page="pageParams.current"
+              v-model:page-size="pageParams.size"
+              :page-sizes="[10, 20, 50]"
+              layout="total, sizes, prev, pager, next"
+              :total="total"
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+            />
+          </div>
         </el-card>
       </div>
     </div>
@@ -162,7 +174,7 @@ import { useRouter } from 'vue-router';
 import { ArrowDown, Delete, EditPen, Plus, Picture } from '@element-plus/icons-vue';
 import SideBar from '../components/SideBar.vue';
 import { useUserStore } from '../stores/user';
-import { getGoodsList, addGoods, updateGoods, deleteGoods, updateGoodsStatus } from '../api/goods';
+import { getGoodsPage, addGoods, updateGoods, deleteGoods, updateGoodsStatus } from '../api/goods';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -171,6 +183,10 @@ const userStore = useUserStore();
 const tableData = ref([]);
 const loading = ref(false);
 const total = ref(0);
+const pageParams = reactive({
+  current: 1,
+  size: 10
+});
 
 // Dialog
 const dialogVisible = ref(false);
@@ -213,9 +229,9 @@ const handleLogout = () => {
 const fetchList = async () => {
   loading.value = true;
   try {
-    const res = await getGoodsList();
+    const res = await getGoodsPage(pageParams);
     tableData.value = res.data?.records || res.data || [];
-    total.value = tableData.value.length;
+    total.value = res.data?.total || tableData.value.length;
   } catch (error) {
     console.error(error);
   } finally {
@@ -249,6 +265,16 @@ const handleEdit = (row) => {
   dialogType.value = 'edit';
   Object.assign(form, row);
   dialogVisible.value = true;
+};
+
+const handleSizeChange = (val) => {
+  pageParams.size = val;
+  fetchList();
+};
+
+const handleCurrentChange = (val) => {
+  pageParams.current = val;
+  fetchList();
 };
 
 const submitForm = () => {
