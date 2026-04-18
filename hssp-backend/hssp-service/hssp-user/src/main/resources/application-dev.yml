@@ -3,8 +3,8 @@ hssp:
     host: localhost
     pw: 123456
   qq:
-    username:
-    code:
+    username: your_qq_number
+    code: your_auth_code
 
   redis:
     host: localhost

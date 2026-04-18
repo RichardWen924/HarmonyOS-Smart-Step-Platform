@@ -84,6 +84,8 @@ public class MallOrderServiceImpl extends ServiceImpl<MallOrderMapper, MallOrder
         System.out.println("订单插入结果: " + orderInsertResult + " 行");
         
         System.out.println("=== MallOrderService: 兑换成功 ===");
+    }
+
     @Override
     public List<MallOrder> listUserOrders(Long userId) {
         return baseMapper.selectList(new LambdaQueryWrapper<MallOrder>()
