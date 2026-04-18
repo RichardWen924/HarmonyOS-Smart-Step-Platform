@@ -6,7 +6,7 @@ import request from '../utils/request';
  */
 export function getGoodsPage(params) {
   return request({
-    url: '/admin/goods/page',
+    url: '/goods/admin/page',
     method: 'get',
     params: {
       page: params.current,
@@ -20,7 +20,7 @@ export function getGoodsPage(params) {
  */
 export function getGoodsById(id) {
   return request({
-    url: `/admin/goods/${id}`,
+    url: `/goods/admin/${id}`,
     method: 'get'
   });
 }
@@ -30,7 +30,7 @@ export function getGoodsById(id) {
  */
 export function addGoods(data) {
   return request({
-    url: '/admin/goods',
+    url: '/goods/admin',
     method: 'post',
     data
   });
@@ -41,7 +41,7 @@ export function addGoods(data) {
  */
 export function updateGoods(data) {
   return request({
-    url: '/admin/goods',
+    url: '/goods/admin',
     method: 'put',
     data
   });
@@ -52,7 +52,7 @@ export function updateGoods(data) {
  */
 export function deleteGoods(id) {
   return request({
-    url: `/admin/goods/${id}`,
+    url: `/goods/admin/${id}`,
     method: 'delete'
   });
 }
@@ -64,7 +64,7 @@ export function deleteGoods(id) {
  */
 export function updateGoodsStatus(id, status) {
   return request({
-    url: `/admin/goods/status/${id}`,
+    url: `/goods/admin/status/${id}`,
     method: 'put',
     params: { status }
   });
