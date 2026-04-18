@@ -1,0 +1,204 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "HSSP 商城模块接口文档",
+    "description": "包含商品展示、积分兑换、订单追踪及管理端功能",
+    "version": "1.1.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/mall",
+      "description": "本地网关入口"
+    }
+  ],
+  "paths": {
+    "/goods/list": {
+      "get": {
+        "summary": "查询商品列表",
+        "tags": ["商品模块"],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ResultArrayGoods" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/order/exchange": {
+      "post": {
+        "summary": "积分兑换商品",
+        "tags": ["订单模块"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "goodsId": { "type": "string", "example": "1" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Result" } } }
+          }
+        }
+      }
+    },
+    "/order/list": {
+      "get": {
+        "summary": "查询个人订单列表",
+        "tags": ["订单模块"],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ResultArrayOrder" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/goods": {
+      "post": {
+        "summary": "添加商品",
+        "tags": ["管理端-商品"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MallGoods" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Result" } } } }
+        }
+      },
+      "put": {
+        "summary": "修改商品",
+        "tags": ["管理端-商品"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MallGoods" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Result" } } } }
+        }
+      }
+    },
+    "/admin/goods/{id}": {
+      "delete": {
+        "summary": "删除商品",
+        "tags": ["管理端-商品"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Result" } } } }
+        }
+      }
+    },
+    "/admin/goods/status/{id}": {
+      "put": {
+        "summary": "切换商品状态 (上架/下架)",
+        "tags": ["管理端-商品"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "status", "in": "query", "required": true, "schema": { "type": "integer" }, "description": "0:上架, 1:下架" }
+        ],
+        "responses": {
+          "200": { "description": "成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Result" } } } }
+        }
+      }
+    },
+    "/admin/order/status": {
+      "put": {
+        "summary": "更新订单状态/物流单号",
+        "tags": ["管理端-订单"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orderId": { "type": "integer" },
+                  "status": { "type": "integer", "description": "1:已发货, 2:已完成, 3:已取消" },
+                  "trackingNumber": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "成功", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Result" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Result": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 1 },
+          "msg": { "type": "string" },
+          "data": { "type": "object" }
+        }
+      },
+      "MallGoods": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "goodsName": { "type": "string" },
+          "requiredPoints": { "type": "integer" },
+          "coverUrl": { "type": "string" },
+          "displayNum": { "type": "integer" },
+          "isDeleted": { "type": "integer", "description": "0:上架, 1:下架" }
+        }
+      },
+      "ResultArrayGoods": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 1 },
+          "data": { "type": "array", "items": { "$ref": "#/components/schemas/MallGoods" } }
+        }
+      },
+      "ResultArrayOrder": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer", "example": 1 },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "integer" },
+                "goodsId": { "type": "integer" },
+                "pointsConsumed": { "type": "integer" },
+                "status": { "type": "integer", "description": "0:待发货, 1:已发货, 2:已完成, 3:已取消" },
+                "trackingNumber": { "type": "string" },
+                "exchangeTime": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
