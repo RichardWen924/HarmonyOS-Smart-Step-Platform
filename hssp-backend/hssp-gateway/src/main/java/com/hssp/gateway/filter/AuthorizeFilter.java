@@ -26,8 +26,11 @@ public class AuthorizeFilter implements GlobalFilter, Ordered {
             "/user/login",
             "/user/login-by-code",
             "/user/register",
-            "/user/send-verification",  // 发送验证码接口
-            "/mall/goods/list" // 允许匿名查看商品
+            "/user/send-verification",
+            "/admin/login",
+            "/admin/register",
+            "/admin/send-verification",
+            "/mall/goods/list"
     );
 
     @Override
