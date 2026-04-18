@@ -47,4 +47,20 @@ public class AdminGoodsController {
             return Result.error(e.getMessage());
         }
     }
+
+    @GetMapping("/list")
+    public Result list() {
+        return Result.success(mallGoodsService.listAll());
+    }
+
+    @GetMapping("/page")
+    public Result page(@RequestParam(defaultValue = "1") int page,
+                       @RequestParam(defaultValue = "10") int size) {
+        return Result.success(mallGoodsService.pageAll(page, size));
+    }
+
+    @GetMapping("/{id}")
+    public Result getById(@PathVariable Long id) {
+        return Result.success(mallGoodsService.getGoodsById(id));
+    }
 }

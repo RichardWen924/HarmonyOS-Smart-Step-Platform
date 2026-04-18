@@ -1,6 +1,7 @@
 package com.hssp.service.mall.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -112,5 +113,26 @@ public class MallGoodsServiceImpl extends ServiceImpl<MallGoodsMapper, MallGoods
         goods.setIsDeleted(status);
         baseMapper.updateById(goods);
         refreshGoodsCache();
+    }
+
+    @Override
+    public List<MallGoods> listAll() {
+        return baseMapper.selectList(null);
+    }
+
+    @Override
+    public Page<MallGoods> page(int page, int size) {
+        return baseMapper.selectPage(new Page<>(page, size),
+                new LambdaQueryWrapper<MallGoods>().eq(MallGoods::getIsDeleted, 0));
+    }
+
+    @Override
+    public Page<MallGoods> pageAll(int page, int size) {
+        return baseMapper.selectPage(new Page<>(page, size), null);
+    }
+
+    @Override
+    public MallGoods getGoodsById(Long id) {
+        return baseMapper.selectById(id);
     }
 }
