@@ -2,6 +2,7 @@ package com.hssp.service.controller;
 
 
 
+import com.hssp.common.context.UserContext;
 import com.hssp.common.result.Result;
 import com.hssp.model.common.result.PageResult;
 import com.hssp.model.vo.RankVO;
@@ -33,13 +34,29 @@ public class RankController {
     public Result getRankList(
             @RequestParam(defaultValue = "day") String periodType,
             @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize) {
+            @RequestParam(defaultValue = "100") int pageSize) {
 
-        // TODO: 后续集成 Spring Security 后，从上下文/拦截器中提取真正的 userId (如果需要的话)
-        Long currentUserId = 1000L;
+        // 从 UserContext 获取当前登录用户ID
+        Long currentUserId = UserContext.getUserId();
         
         PageResult<RankVO> pageData = rankService.getRankingData(periodType, pageNum, pageSize, currentUserId);
 
         return Result.success(pageData);
+    }
+    
+    /**
+     * 获取当前用户在指定周期的排名
+     *
+     * @param periodType 周期类型：day（日排行）、week（周排行）、month（月排行）
+     * @return Result，包含用户的排名信息，如果未上榜则返回null
+     */
+    @GetMapping("/ranking/my")
+    public Result getMyRanking(@RequestParam(defaultValue = "month") String periodType) {
+        // 从 UserContext 获取当前登录用户ID
+        Long currentUserId = UserContext.getUserId();
+        
+        RankVO userRanking = rankService.getUserRanking(periodType, currentUserId);
+        
+        return Result.success(userRanking);
     }
 }
