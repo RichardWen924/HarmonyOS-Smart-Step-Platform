@@ -21,6 +21,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/goods-manage',
+    name: 'GoodsManage',
+    component: () => import('../views/GoodsManage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/',
     redirect: '/points-rule'
   }

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="side-nav">
     <div class="logo">
       <el-icon :size="24" color="#409EFF"><TrendCharts /></el-icon>
@@ -17,6 +17,10 @@
         <el-icon><User /></el-icon>
         <span>用户管理</span>
       </el-menu-item>
+      <el-menu-item index="3">
+        <el-icon><Shop /></el-icon>
+        <span>商品管理</span>
+      </el-menu-item>
     </el-menu>
   </div>
 </template>
@@ -24,7 +28,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { List, User, TrendCharts } from '@element-plus/icons-vue';
+import { List, User, TrendCharts, Shop } from '@element-plus/icons-vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -33,12 +37,14 @@ const router = useRouter();
 const activeMenu = computed(() => {
   if (route.path.includes('points-rule')) return '1';
   if (route.path.includes('user-manage')) return '2';
+  if (route.path.includes('goods-manage')) return '3';
   return '1';
 });
 
 const handleMenuSelect = (index) => {
   if (index === '1') router.push('/points-rule');
   if (index === '2') router.push('/user-manage');
+  if (index === '3') router.push('/goods-manage');
 };
 </script>
 
