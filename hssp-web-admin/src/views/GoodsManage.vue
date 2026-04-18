@@ -1,5 +1,5 @@
-<template>
-  <div class="points-rule-container">
+﻿<template>
+  <div class="goods-manage-container">
     <SideBar />
 
     <div class="main-content">
@@ -7,7 +7,7 @@
         <div class="breadcrumb">
           <el-breadcrumb separator="/">
             <el-breadcrumb-item>管理中心</el-breadcrumb-item>
-            <el-breadcrumb-item>积分规则</el-breadcrumb-item>
+            <el-breadcrumb-item>商品管理</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
         <div class="header-right">
@@ -30,20 +30,11 @@
         <el-card shadow="never" class="table-card">
           <div class="table-header">
             <div class="title-group">
-              <el-tag type="info">共 {{ total }} 条规则</el-tag>
+              <el-tag type="info">共 {{ total }} 件商品</el-tag>
             </div>
             <div class="action-group">
-              <el-button 
-                type="danger" 
-                plain 
-                :disabled="selectedIds.length === 0" 
-                @click="handleBatchDelete"
-              >
-                <el-icon style="margin-right: 4px"><Delete /></el-icon>
-                批量删除 {{ selectedIds.length > 0 ? `(${selectedIds.length})` : '' }}
-              </el-button>
               <el-button type="primary" @click="handleAdd">
-                <el-icon style="margin-right: 4px"><Plus /></el-icon>新增规则
+                <el-icon style="margin-right: 4px"><Plus /></el-icon>新增商品
               </el-button>
             </div>
           </div>
@@ -53,32 +44,55 @@
             :data="tableData"
             style="width: 100%"
             class="custom-table"
-            @selection-change="handleSelectionChange"
           >
-            <el-table-column type="selection" width="55" />
-            <el-table-column prop="ruleName" label="规则名称" min-width="200" />
-            <el-table-column prop="stepsRequired" label="所需步数" width="180" align="right">
+            <el-table-column label="商品信息" min-width="250">
               <template #default="{ row }">
-                <span class="numeric-text">{{ row.stepsRequired.toLocaleString() }}</span> 步
+                <div class="goods-info-cell">
+                  <el-image
+                    class="goods-cover"
+                    :src="row.coverUrl"
+                    fit="cover"
+                  >
+                    <template #error>
+                      <div class="image-slot">
+                        <el-icon><Picture /></el-icon>
+                      </div>
+                    </template>
+                  </el-image>
+                  <div class="goods-detail">
+                    <div class="goods-name">{{ row.goodsName }}</div>
+                    <div class="goods-id">ID: {{ row.id }}</div>
+                  </div>
+                </div>
               </template>
             </el-table-column>
-            <el-table-column prop="pointsAwarded" label="奖励积分" width="150" align="center">
+
+            <el-table-column prop="requiredPoints" label="所需积分" width="150" align="right">
               <template #default="{ row }">
-                <el-tag type="success" effect="light" class="points-badge">
-                  +{{ row.pointsAwarded }} 积分
-                </el-tag>
+                <span class="numeric-text points">{{ row.requiredPoints.toLocaleString() }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="isActive" label="状态" width="100" align="center">
+
+            <el-table-column prop="displayNum" label="排序权重" width="120" align="center">
+              <template #default="{ row }">
+                <span class="numeric-text">{{ row.displayNum }}</span>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="状态" width="120" align="center">
               <template #default="{ row }">
                 <el-switch
-                  v-model="row.isActive"
-                  :active-value="1"
-                  :inactive-value="0"
+                  v-model="row.isDeleted"
+                  :active-value="0"
+                  :inactive-value="1"
+                  active-text="上架"
+                  inactive-text="下架"
+                  inline-prompt
                   @change="(val) => handleStatusChange(row, val)"
                 />
               </template>
             </el-table-column>
+
             <el-table-column label="操作" width="160" align="center" fixed="right">
               <template #default="{ row }">
                 <div class="table-ops">
@@ -104,38 +118,39 @@
               :total="total"
               @size-change="handleSizeChange"
               @current-change="handleCurrentChange"
-            >
-              <template #total>
-                <span>共 {{ total }} 条资料</span>
-              </template>
-            </el-pagination>
+            />
           </div>
         </el-card>
       </div>
     </div>
 
-    <!-- Add / Edit Dialog -->
+    <!-- Goods Add / Edit Dialog -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogType === 'add' ? '新增积分规则' : '编辑积分规则'"
-      width="460px"
+      :title="dialogType === 'add' ? '新增商品' : '编辑商品信息'"
+      width="500px"
       append-to-body
       destroy-on-close
       class="custom-dialog"
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-        <el-form-item label="规则名称" prop="ruleName">
-          <el-input v-model="form.ruleName" placeholder="例如：每日达标奖励" maxlength="20" show-word-limit />
+        <el-form-item label="商品名称" prop="goodsName">
+          <el-input v-model="form.goodsName" placeholder="输入商品名称" />
         </el-form-item>
+
+        <el-form-item label="封面图片路径" prop="coverUrl">
+          <el-input v-model="form.coverUrl" placeholder="输入图片 URL 地址" />
+        </el-form-item>
+
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="所需步数" prop="stepsRequired">
-              <el-input-number v-model="form.stepsRequired" :min="1" :step="1000" style="width: 100%" />
+            <el-form-item label="所需积分" prop="requiredPoints">
+              <el-input-number v-model="form.requiredPoints" :min="0" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="奖励积分" prop="pointsAwarded">
-              <el-input-number v-model="form.pointsAwarded" :min="1" :step="1" style="width: 100%" />
+            <el-form-item label="排序权重" prop="displayNum">
+              <el-input-number v-model="form.displayNum" :min="0" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -144,7 +159,7 @@
         <div class="dialog-footer">
           <el-button @click="dialogVisible = false">取消</el-button>
           <el-button type="primary" :loading="submitLoading" @click="submitForm">
-            提交保存
+            保存提交
           </el-button>
         </div>
       </template>
@@ -156,10 +171,10 @@
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useRouter } from 'vue-router';
-import { ArrowDown, Delete, EditPen } from '@element-plus/icons-vue';
+import { ArrowDown, Delete, EditPen, Plus, Picture } from '@element-plus/icons-vue';
 import SideBar from '../components/SideBar.vue';
 import { useUserStore } from '../stores/user';
-import { getPointsRulePage, addPointsRule, updatePointsRule, deletePointsRules } from '../api/points';
+import { getGoodsPage, addGoods, updateGoods, deleteGoods, updateGoodsStatus } from '../api/goods';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -172,24 +187,25 @@ const pageParams = reactive({
   current: 1,
   size: 10
 });
-const selectedIds = ref([]);
 
 // Dialog
 const dialogVisible = ref(false);
-const dialogType = ref('add'); 
+const dialogType = ref('add');
 const submitLoading = ref(false);
 const formRef = ref(null);
 const form = reactive({
   id: null,
-  ruleName: '',
-  stepsRequired: 1,
-  pointsAwarded: 1
+  goodsName: '',
+  requiredPoints: 0,
+  coverUrl: '',
+  displayNum: 0,
+  isDeleted: 0
 });
 
 const rules = {
-  ruleName: [{ required: true, message: '请输入规则名称', trigger: 'blur' }],
-  stepsRequired: [{ required: true, type: 'number', message: '步数必填', trigger: 'blur' }],
-  pointsAwarded: [{ required: true, type: 'number', message: '积分必填', trigger: 'blur' }]
+  goodsName: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
+  requiredPoints: [{ required: true, message: '请输入所需积分', trigger: 'blur' }],
+  coverUrl: [{ required: true, message: '请输入封面图地址', trigger: 'blur' }]
 };
 
 const handleCommand = (command) => {
@@ -198,12 +214,24 @@ const handleCommand = (command) => {
   }
 };
 
+const handleLogout = () => {
+  ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+    confirmButtonText: '退出',
+    cancelButtonText: '取消',
+    type: 'info'
+  }).then(() => {
+    userStore.logout();
+    router.push('/login');
+    ElMessage.success('已安全退出');
+  });
+};
+
 const fetchList = async () => {
   loading.value = true;
   try {
-    const res = await getPointsRulePage(pageParams);
+    const res = await getGoodsPage(pageParams);
     tableData.value = res.data?.records || res.data || [];
-    total.value = res.data?.total || tableData.value.length || 0;
+    total.value = res.data?.total || tableData.value.length;
   } catch (error) {
     console.error(error);
   } finally {
@@ -211,8 +239,32 @@ const fetchList = async () => {
   }
 };
 
-const handleSelectionChange = (selection) => {
-  selectedIds.value = selection.map(item => item.id).filter(id => id != null);
+const handleStatusChange = async (row, val) => {
+  try {
+    await updateGoodsStatus(row.id, val);
+    ElMessage.success(`商品已${val === 0 ? '上架' : '下架'}`);
+  } catch (error) {
+    row.isDeleted = val === 0 ? 1 : 0;
+  }
+};
+
+const handleAdd = () => {
+  dialogType.value = 'add';
+  Object.assign(form, {
+    id: null,
+    goodsName: '',
+    requiredPoints: 0,
+    coverUrl: '',
+    displayNum: 0,
+    isDeleted: 0
+  });
+  dialogVisible.value = true;
+};
+
+const handleEdit = (row) => {
+  dialogType.value = 'edit';
+  Object.assign(form, row);
+  dialogVisible.value = true;
 };
 
 const handleSizeChange = (val) => {
@@ -225,88 +277,22 @@ const handleCurrentChange = (val) => {
   fetchList();
 };
 
-const handleStatusChange = async (row, val) => {
-  try {
-    await updatePointsRule({
-      ...row,
-      isActive: val
-    });
-    ElMessage.success(`规则已${val === 1 ? '开启' : '关闭'}`);
-  } catch (error) {
-    // 恢复原始状态
-    row.isActive = val === 1 ? 0 : 1;
-    console.error(error);
-  }
-};
-
-const handleAdd = () => {
-  dialogType.value = 'add';
-  form.id = null;
-  form.ruleName = '';
-  form.stepsRequired = 1000;
-  form.pointsAwarded = 10;
-  dialogVisible.value = true;
-};
-
-const handleEdit = (row) => {
-  dialogType.value = 'edit';
-  form.id = row.id;
-  form.ruleName = row.ruleName;
-  form.stepsRequired = row.stepsRequired;
-  form.pointsAwarded = row.pointsAwarded;
-  dialogVisible.value = true;
-};
-
-const handleDelete = (row) => {
-  confirmDelete([row.id]);
-};
-
-const handleBatchDelete = () => {
-  if (selectedIds.value.length === 0) return;
-  confirmDelete(selectedIds.value);
-};
-
-const confirmDelete = (ids) => {
-  ElMessageBox.confirm('数据删除后无法恢复，确定要继续吗？', '操作确认', {
-    confirmButtonText: '确定删除',
-    cancelButtonText: '取消',
-    type: 'warning',
-    buttonSize: 'default'
-  }).then(async () => {
-    try {
-      await deletePointsRules(ids);
-      ElMessage.success('操作成功');
-      if (ids.length >= tableData.value.length && pageParams.current > 1) {
-         pageParams.current--;
-      }
-      fetchList();
-    } catch (e) {
-      console.error(e);
-    }
-  }).catch(() => {});
-};
-
 const submitForm = () => {
-  if (!formRef.value) return;
   formRef.value.validate(async (valid) => {
     if (valid) {
       submitLoading.value = true;
       try {
         if (dialogType.value === 'add') {
-          await addPointsRule({
-            ruleName: form.ruleName,
-            stepsRequired: form.stepsRequired,
-            pointsAwarded: form.pointsAwarded
-          });
+          await addGoods(form);
           ElMessage.success('新增成功');
         } else {
-          await updatePointsRule(form);
+          await updateGoods(form);
           ElMessage.success('修改成功');
         }
         dialogVisible.value = false;
         fetchList();
-      } catch (e) {
-        console.error(e);
+      } catch (error) {
+        console.error(error);
       } finally {
         submitLoading.value = false;
       }
@@ -314,20 +300,20 @@ const submitForm = () => {
   });
 };
 
-const resetForm = () => {
-  if (formRef.value) formRef.value.resetFields();
-};
-
-const handleLogout = () => {
-  ElMessageBox.confirm('退出后需要重新登录，确定退出吗？', '提示', {
-    confirmButtonText: '退出登录',
+const handleDelete = (row) => {
+  ElMessageBox.confirm('确定要删除该商品吗？', '警告', {
+    confirmButtonText: '确定',
     cancelButtonText: '取消',
-    type: 'info'
-  }).then(() => {
-    userStore.logout();
-    router.push('/login');
-    ElMessage.success('已安全退出');
-  }).catch(() => {});
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await deleteGoods(row.id);
+      ElMessage.success('删除成功');
+      fetchList();
+    } catch (e) {
+      console.error(e);
+    }
+  });
 };
 
 onMounted(() => {
@@ -336,14 +322,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.points-rule-container {
+.goods-manage-container {
   display: flex;
   height: 100vh;
   background-color: #f8fafc;
   overflow: hidden;
 }
 
-/* Main Content Area */
 .main-content {
   flex: 1;
   display: flex;
@@ -371,7 +356,6 @@ onMounted(() => {
   border-radius: 99px;
   transition: all 0.3s;
   cursor: pointer;
-  outline: none;
 }
 
 .user-profile:hover {
@@ -403,15 +387,37 @@ onMounted(() => {
   margin-bottom: 28px;
 }
 
-.action-group {
+.goods-info-cell {
   display: flex;
+  align-items: center;
   gap: 16px;
 }
 
-.title-group {
+.goods-cover {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  background-color: #f1f5f9;
+}
+
+.image-slot {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 12px;
+  width: 100%;
+  height: 100%;
+  color: #94a3b8;
+  font-size: 24px;
+}
+
+.goods-name {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.goods-id {
+  font-size: 12px;
+  color: #64748b;
 }
 
 .numeric-text {
@@ -420,35 +426,12 @@ onMounted(() => {
   color: #1e293b;
 }
 
-.points-badge {
+.numeric-text.points {
+  color: #10b981;
   font-weight: 700;
-}
-
-.pagination-wrapper {
-  margin-top: 32px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.custom-table {
-  --el-table-border-color: #f1f5f9;
-  --el-table-header-bg-color: #f8fafc;
-}
-
-.custom-table :deep(.el-table__header) th {
-  color: #64748b;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 12px 0;
-}
-
-.custom-table :deep(.el-table__row) td {
-  padding: 12px 0;
-}
-
-:deep(.el-table__row) {
-  height: auto;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .table-ops {
@@ -464,34 +447,30 @@ onMounted(() => {
   font-size: 13px;
   padding: 2px 4px;
   border-radius: 4px;
-  transition: all 0.2s;
 }
 
-.table-ops :deep(.el-button--primary:hover) {
-  background-color: rgba(59, 130, 246, 0.1);
+.custom-table :deep(.el-table__header) th {
+  color: #64748b;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 0;
 }
 
-.table-ops :deep(.el-button--danger:hover) {
-  background-color: rgba(239, 68, 68, 0.1);
+.custom-table :deep(.el-table__row) td {
+  padding: 12px 0;
 }
 
 /* Dialog Styling */
 :deep(.el-dialog) {
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 :deep(.el-dialog__header) {
-  margin-right: 0;
   padding: 24px 32px;
   background-color: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
-}
-
-:deep(.el-dialog__title) {
-  font-weight: 700;
-  color: #1e293b;
 }
 
 :deep(.el-dialog__body) {

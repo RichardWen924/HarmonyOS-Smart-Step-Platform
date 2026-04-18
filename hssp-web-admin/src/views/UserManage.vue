@@ -1,5 +1,5 @@
 <template>
-  <div class="points-rule-container">
+  <div class="user-manage-container">
     <SideBar />
 
     <div class="main-content">
@@ -7,7 +7,7 @@
         <div class="breadcrumb">
           <el-breadcrumb separator="/">
             <el-breadcrumb-item>管理中心</el-breadcrumb-item>
-            <el-breadcrumb-item>积分规则</el-breadcrumb-item>
+            <el-breadcrumb-item>用户管理</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
         <div class="header-right">
@@ -30,7 +30,7 @@
         <el-card shadow="never" class="table-card">
           <div class="table-header">
             <div class="title-group">
-              <el-tag type="info">共 {{ total }} 条规则</el-tag>
+              <el-tag type="info">共 {{ total }} 名用户</el-tag>
             </div>
             <div class="action-group">
               <el-button 
@@ -41,9 +41,6 @@
               >
                 <el-icon style="margin-right: 4px"><Delete /></el-icon>
                 批量删除 {{ selectedIds.length > 0 ? `(${selectedIds.length})` : '' }}
-              </el-button>
-              <el-button type="primary" @click="handleAdd">
-                <el-icon style="margin-right: 4px"><Plus /></el-icon>新增规则
               </el-button>
             </div>
           </div>
@@ -56,27 +53,38 @@
             @selection-change="handleSelectionChange"
           >
             <el-table-column type="selection" width="55" />
-            <el-table-column prop="ruleName" label="规则名称" min-width="200" />
-            <el-table-column prop="stepsRequired" label="所需步数" width="180" align="right">
+            <el-table-column label="用户信息" min-width="200">
               <template #default="{ row }">
-                <span class="numeric-text">{{ row.stepsRequired.toLocaleString() }}</span> 步
+                <div class="user-info-cell">
+                  <el-avatar :size="40" :src="row.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
+                  <div class="user-detail">
+                    <div class="nickname">{{ row.nickname || '未设置昵称' }}</div>
+                    <div class="username-text">@{{ row.username }}</div>
+                  </div>
+                </div>
               </template>
             </el-table-column>
-            <el-table-column prop="pointsAwarded" label="奖励积分" width="150" align="center">
+            <el-table-column prop="email" label="邮箱" min-width="220" />
+            <el-table-column prop="totalPoints" label="总积分" width="120" align="right">
               <template #default="{ row }">
-                <el-tag type="success" effect="light" class="points-badge">
-                  +{{ row.pointsAwarded }} 积分
+                <span class="numeric-text points">{{ row.totalPoints.toLocaleString() }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="totalStep" label="累计步数" width="150" align="right">
+              <template #default="{ row }">
+                <span class="numeric-text steps">{{ row.totalStep.toLocaleString() }}</span>
+              </template>
+            </el-table-column>
+             <el-table-column prop="remainingStep" label="剩余步数" width="120" align="right">
+               <template #default="{ row }">
+                 <span class="numeric-text">{{ row.remainingStep.toLocaleString() }}</span>
+               </template>
+             </el-table-column>
+            <el-table-column label="账号状态" width="100" align="center">
+              <template #default="{ row }">
+                <el-tag :type="row.isDeleted == 1 ? 'danger' : 'success'" size="small" effect="light">
+                  {{ row.isDeleted == 1 ? '已删除' : '正常' }}
                 </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="isActive" label="状态" width="100" align="center">
-              <template #default="{ row }">
-                <el-switch
-                  v-model="row.isActive"
-                  :active-value="1"
-                  :inactive-value="0"
-                  @change="(val) => handleStatusChange(row, val)"
-                />
               </template>
             </el-table-column>
             <el-table-column label="操作" width="160" align="center" fixed="right">
@@ -97,45 +105,62 @@
 
           <div class="pagination-wrapper">
             <el-pagination
-              v-model:current-page="pageParams.current"
-              v-model:page-size="pageParams.size"
-              :page-sizes="[10, 20, 50]"
-              layout="total, sizes, prev, pager, next"
+              layout="total, prev, pager, next"
               :total="total"
-              @size-change="handleSizeChange"
+              :page-size="10"
               @current-change="handleCurrentChange"
-            >
-              <template #total>
-                <span>共 {{ total }} 条资料</span>
-              </template>
-            </el-pagination>
+            />
           </div>
         </el-card>
       </div>
     </div>
 
-    <!-- Add / Edit Dialog -->
+    <!-- User Detail / Edit Dialog -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogType === 'add' ? '新增积分规则' : '编辑积分规则'"
-      width="460px"
+      title="编辑用户信息"
+      width="500px"
       append-to-body
       destroy-on-close
       class="custom-dialog"
     >
-      <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-        <el-form-item label="规则名称" prop="ruleName">
-          <el-input v-model="form.ruleName" placeholder="例如：每日达标奖励" maxlength="20" show-word-limit />
-        </el-form-item>
+      <el-form :model="form" label-position="top">
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="所需步数" prop="stepsRequired">
-              <el-input-number v-model="form.stepsRequired" :min="1" :step="1000" style="width: 100%" />
+            <el-form-item label="用户名">
+              <el-input v-model="form.username" disabled placeholder="账号ID不可变更" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="奖励积分" prop="pointsAwarded">
-              <el-input-number v-model="form.pointsAwarded" :min="1" :step="1" style="width: 100%" />
+            <el-form-item label="性别">
+              <el-select v-model="form.sex" style="width: 100%">
+                <el-option :value="1" label="男" />
+                <el-option :value="2" label="女" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="昵称">
+              <el-input v-model="form.nickname" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="邮箱">
+              <el-input v-model="form.email" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="账户积分">
+              <el-input-number v-model="form.totalPoints" :min="0" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="每日步数上限">
+              <el-input-number v-model="form.maxDailySteps" :min="0" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -144,7 +169,7 @@
         <div class="dialog-footer">
           <el-button @click="dialogVisible = false">取消</el-button>
           <el-button type="primary" :loading="submitLoading" @click="submitForm">
-            提交保存
+            保存修改
           </el-button>
         </div>
       </template>
@@ -159,7 +184,7 @@ import { useRouter } from 'vue-router';
 import { ArrowDown, Delete, EditPen } from '@element-plus/icons-vue';
 import SideBar from '../components/SideBar.vue';
 import { useUserStore } from '../stores/user';
-import { getPointsRulePage, addPointsRule, updatePointsRule, deletePointsRules } from '../api/points';
+import { getUserList, updateUser, deleteUsers } from '../api/user';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -168,29 +193,23 @@ const userStore = useUserStore();
 const tableData = ref([]);
 const loading = ref(false);
 const total = ref(0);
-const pageParams = reactive({
-  current: 1,
-  size: 10
-});
 const selectedIds = ref([]);
 
 // Dialog
 const dialogVisible = ref(false);
-const dialogType = ref('add'); 
 const submitLoading = ref(false);
-const formRef = ref(null);
 const form = reactive({
   id: null,
-  ruleName: '',
-  stepsRequired: 1,
-  pointsAwarded: 1
+  username: '',
+  nickname: '',
+  email: '',
+  sex: 1,
+  totalPoints: 0,
+  totalStep: 0,
+  remainingStep: 0,
+  maxDailySteps: 0,
+  avatar: ''
 });
-
-const rules = {
-  ruleName: [{ required: true, message: '请输入规则名称', trigger: 'blur' }],
-  stepsRequired: [{ required: true, type: 'number', message: '步数必填', trigger: 'blur' }],
-  pointsAwarded: [{ required: true, type: 'number', message: '积分必填', trigger: 'blur' }]
-};
 
 const handleCommand = (command) => {
   if (command === 'logout') {
@@ -198,129 +217,9 @@ const handleCommand = (command) => {
   }
 };
 
-const fetchList = async () => {
-  loading.value = true;
-  try {
-    const res = await getPointsRulePage(pageParams);
-    tableData.value = res.data?.records || res.data || [];
-    total.value = res.data?.total || tableData.value.length || 0;
-  } catch (error) {
-    console.error(error);
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleSelectionChange = (selection) => {
-  selectedIds.value = selection.map(item => item.id).filter(id => id != null);
-};
-
-const handleSizeChange = (val) => {
-  pageParams.size = val;
-  fetchList();
-};
-
-const handleCurrentChange = (val) => {
-  pageParams.current = val;
-  fetchList();
-};
-
-const handleStatusChange = async (row, val) => {
-  try {
-    await updatePointsRule({
-      ...row,
-      isActive: val
-    });
-    ElMessage.success(`规则已${val === 1 ? '开启' : '关闭'}`);
-  } catch (error) {
-    // 恢复原始状态
-    row.isActive = val === 1 ? 0 : 1;
-    console.error(error);
-  }
-};
-
-const handleAdd = () => {
-  dialogType.value = 'add';
-  form.id = null;
-  form.ruleName = '';
-  form.stepsRequired = 1000;
-  form.pointsAwarded = 10;
-  dialogVisible.value = true;
-};
-
-const handleEdit = (row) => {
-  dialogType.value = 'edit';
-  form.id = row.id;
-  form.ruleName = row.ruleName;
-  form.stepsRequired = row.stepsRequired;
-  form.pointsAwarded = row.pointsAwarded;
-  dialogVisible.value = true;
-};
-
-const handleDelete = (row) => {
-  confirmDelete([row.id]);
-};
-
-const handleBatchDelete = () => {
-  if (selectedIds.value.length === 0) return;
-  confirmDelete(selectedIds.value);
-};
-
-const confirmDelete = (ids) => {
-  ElMessageBox.confirm('数据删除后无法恢复，确定要继续吗？', '操作确认', {
-    confirmButtonText: '确定删除',
-    cancelButtonText: '取消',
-    type: 'warning',
-    buttonSize: 'default'
-  }).then(async () => {
-    try {
-      await deletePointsRules(ids);
-      ElMessage.success('操作成功');
-      if (ids.length >= tableData.value.length && pageParams.current > 1) {
-         pageParams.current--;
-      }
-      fetchList();
-    } catch (e) {
-      console.error(e);
-    }
-  }).catch(() => {});
-};
-
-const submitForm = () => {
-  if (!formRef.value) return;
-  formRef.value.validate(async (valid) => {
-    if (valid) {
-      submitLoading.value = true;
-      try {
-        if (dialogType.value === 'add') {
-          await addPointsRule({
-            ruleName: form.ruleName,
-            stepsRequired: form.stepsRequired,
-            pointsAwarded: form.pointsAwarded
-          });
-          ElMessage.success('新增成功');
-        } else {
-          await updatePointsRule(form);
-          ElMessage.success('修改成功');
-        }
-        dialogVisible.value = false;
-        fetchList();
-      } catch (e) {
-        console.error(e);
-      } finally {
-        submitLoading.value = false;
-      }
-    }
-  });
-};
-
-const resetForm = () => {
-  if (formRef.value) formRef.value.resetFields();
-};
-
 const handleLogout = () => {
-  ElMessageBox.confirm('退出后需要重新登录，确定退出吗？', '提示', {
-    confirmButtonText: '退出登录',
+  ElMessageBox.confirm('确定要退出登录并返回首页吗？', '提示', {
+    confirmButtonText: '确定退出',
     cancelButtonText: '取消',
     type: 'info'
   }).then(() => {
@@ -330,13 +229,79 @@ const handleLogout = () => {
   }).catch(() => {});
 };
 
+const fetchList = async () => {
+  loading.value = true;
+  try {
+    const res = await getUserList();
+    // 假设后端返回的是数组或者包含 records 的对象
+    tableData.value = res.data?.records || res.data || [];
+    total.value = tableData.value.length;
+  } catch (error) {
+    console.error(error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleSelectionChange = (selection) => {
+  selectedIds.value = selection.map(item => item.id);
+};
+
+const handleCurrentChange = (val) => {
+  // 目前暂无分页接口参数，前端模拟或待后端完善
+  fetchList();
+};
+
+const handleEdit = (row) => {
+  Object.assign(form, row);
+  dialogVisible.value = true;
+};
+
+const submitForm = async () => {
+  submitLoading.value = true;
+  try {
+    await updateUser(form);
+    ElMessage.success('更新成功');
+    dialogVisible.value = false;
+    fetchList();
+  } catch (error) {
+    console.error(error);
+  } finally {
+    submitLoading.value = false;
+  }
+};
+
+const handleDelete = (row) => {
+  confirmDelete([row.id]);
+};
+
+const handleBatchDelete = () => {
+  confirmDelete(selectedIds.value);
+};
+
+const confirmDelete = (ids) => {
+  ElMessageBox.confirm('确定要删除选中的用户吗？', '警告', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await deleteUsers(ids.join(','));
+      ElMessage.success('删除成功');
+      fetchList();
+    } catch (e) {
+      console.error(e);
+    }
+  });
+};
+
 onMounted(() => {
   fetchList();
 });
 </script>
 
 <style scoped>
-.points-rule-container {
+.user-manage-container {
   display: flex;
   height: 100vh;
   background-color: #f8fafc;
@@ -403,15 +368,20 @@ onMounted(() => {
   margin-bottom: 28px;
 }
 
-.action-group {
+.user-info-cell {
   display: flex;
+  align-items: center;
   gap: 16px;
 }
 
-.title-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.nickname {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.username-text {
+  font-size: 12px;
+  color: #64748b;
 }
 
 .numeric-text {
@@ -420,8 +390,38 @@ onMounted(() => {
   color: #1e293b;
 }
 
-.points-badge {
+.numeric-text.points {
+  color: #10b981;
   font-weight: 700;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.numeric-text.steps { color: #3b82f6; }
+
+.table-ops {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.table-ops :deep(.el-button) {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.table-ops :deep(.el-button--primary:hover) {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.table-ops :deep(.el-button--danger:hover) {
+  background-color: rgba(239, 68, 68, 0.1);
 }
 
 .pagination-wrapper {
@@ -449,30 +449,6 @@ onMounted(() => {
 
 :deep(.el-table__row) {
   height: auto;
-}
-
-.table-ops {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-}
-
-.table-ops :deep(.el-button) {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 13px;
-  padding: 2px 4px;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.table-ops :deep(.el-button--primary:hover) {
-  background-color: rgba(59, 130, 246, 0.1);
-}
-
-.table-ops :deep(.el-button--danger:hover) {
-  background-color: rgba(239, 68, 68, 0.1);
 }
 
 /* Dialog Styling */
