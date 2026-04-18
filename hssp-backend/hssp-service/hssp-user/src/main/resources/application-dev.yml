@@ -1,7 +1,7 @@
 hssp:
   db:
     host: localhost
-    pw: Wen668668
+    pw: 123456
   qq:
     username:
     code:
@@ -9,5 +9,5 @@ hssp:
   redis:
     host: localhost
     port: 6379
-    pw:
+    pw: 123456
     # password: 123321   # 若 Redis 设置了密码，取消注释并填写
