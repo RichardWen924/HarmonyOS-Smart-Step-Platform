@@ -374,6 +374,12 @@ onMounted(() => {
   overflow-y: auto;
 }
 
+.pagination-wrapper {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .table-card {
   border-radius: 16px;
   border: none;
