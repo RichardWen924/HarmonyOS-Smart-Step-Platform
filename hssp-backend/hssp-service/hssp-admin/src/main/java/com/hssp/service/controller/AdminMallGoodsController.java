@@ -1,22 +1,21 @@
-package com.hssp.service.mall.controller;
+package com.hssp.service.controller;
 
 import com.hssp.common.result.Result;
 import com.hssp.model.mall.po.MallGoods;
-import com.hssp.service.mall.service.MallGoodsService;
-import org.springframework.beans.BeanUtils;
+import com.hssp.service.service.AdminMallGoodsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/goods/admin")
-public class AdminGoodsController {
+@RequestMapping("/admin/goods")
+public class AdminMallGoodsController {
 
     @Autowired
-    private MallGoodsService mallGoodsService;
+    private AdminMallGoodsService adminMallGoodsService;
 
     @PostMapping
     public Result add(@RequestBody MallGoods goods) {
-        mallGoodsService.save(goods);
+        adminMallGoodsService.save(goods);
         return Result.success("添加商品成功");
     }
 
@@ -25,13 +24,13 @@ public class AdminGoodsController {
         if (goods.getId() == null) {
             return Result.error("商品ID不能为空");
         }
-        mallGoodsService.updateById(goods);
+        adminMallGoodsService.updateById(goods);
         return Result.success("修改商品成功");
     }
 
     @DeleteMapping("/{id}")
     public Result delete(@PathVariable Long id) {
-        mallGoodsService.removeById(id);
+        adminMallGoodsService.removeById(id);
         return Result.success("删除商品成功");
     }
 
@@ -41,7 +40,7 @@ public class AdminGoodsController {
             return Result.error("状态参数不合法 (0:上架, 1:下架)");
         }
         try {
-            mallGoodsService.changeStatus(id, status);
+            adminMallGoodsService.changeStatus(id, status);
             return Result.success(status == 0 ? "上架成功" : "下架成功");
         } catch (Exception e) {
             return Result.error(e.getMessage());
@@ -50,17 +49,17 @@ public class AdminGoodsController {
 
     @GetMapping("/list")
     public Result list() {
-        return Result.success(mallGoodsService.listAll());
+        return Result.success(adminMallGoodsService.listAll());
     }
 
     @GetMapping("/page")
     public Result page(@RequestParam(defaultValue = "1") int page,
                        @RequestParam(defaultValue = "10") int size) {
-        return Result.success(mallGoodsService.pageAll(page, size));
+        return Result.success(adminMallGoodsService.pageAll(page, size));
     }
 
     @GetMapping("/{id}")
     public Result getById(@PathVariable Long id) {
-        return Result.success(mallGoodsService.getGoodsById(id));
+        return Result.success(adminMallGoodsService.getGoodsById(id));
     }
 }
