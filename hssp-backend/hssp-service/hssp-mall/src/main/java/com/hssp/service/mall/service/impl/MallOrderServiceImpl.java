@@ -1,6 +1,7 @@
 package com.hssp.service.mall.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.hssp.model.mall.dto.OrderStatusUpdateDto;
 import com.hssp.model.mall.po.MallGoods;
 import com.hssp.model.mall.po.MallOrder;
 import com.hssp.model.user.po.User;
@@ -14,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 @Service
 public class MallOrderServiceImpl extends ServiceImpl<MallOrderMapper, MallOrder> implements MallOrderService {
@@ -75,10 +78,31 @@ public class MallOrderServiceImpl extends ServiceImpl<MallOrderMapper, MallOrder
         order.setUserId(userId);
         order.setGoodsId(goodsId);
         order.setPointsConsumed(goods.getRequiredPoints());
+        order.setStatus(0); // 0: 待发货
         order.setExchangeTime(new Date());
         int orderInsertResult = baseMapper.insert(order);
         System.out.println("订单插入结果: " + orderInsertResult + " 行");
         
         System.out.println("=== MallOrderService: 兑换成功 ===");
+    @Override
+    public List<MallOrder> listUserOrders(Long userId) {
+        return baseMapper.selectList(new LambdaQueryWrapper<MallOrder>()
+                .eq(MallOrder::getUserId, userId)
+                .orderByDesc(MallOrder::getExchangeTime));
+    }
+
+    @Override
+    public void updateOrderStatus(OrderStatusUpdateDto dto) {
+        MallOrder order = baseMapper.selectById(dto.getOrderId());
+        if (order == null) {
+            throw new RuntimeException("订单不存在");
+        }
+        if (dto.getStatus() != null) {
+            order.setStatus(dto.getStatus());
+        }
+        if (dto.getTrackingNumber() != null) {
+            order.setTrackingNumber(dto.getTrackingNumber());
+        }
+        baseMapper.updateById(order);
     }
 }
