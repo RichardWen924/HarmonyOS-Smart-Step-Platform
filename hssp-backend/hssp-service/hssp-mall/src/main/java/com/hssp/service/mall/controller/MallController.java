@@ -31,10 +31,11 @@ public class MallController {
     public Result getProducts() {
         try {
             System.out.println("=== MallController: 开始查询商品列表 ===");
+            // 强制从数据库查询最新数据
             List<MallGoods> goodsList = mallGoodsService.list();
             System.out.println("=== MallController: 查询到 " + (goodsList != null ? goodsList.size() : 0) + " 个商品 ===");
             if (goodsList != null && !goodsList.isEmpty()) {
-                System.out.println("第一个商品: " + goodsList.get(0).getGoodsName());
+                System.out.println("第一个商品: " + goodsList.get(0).getGoodsName() + ", 库存: " + goodsList.get(0).getStock());
             }
             return Result.success(goodsList);
         } catch (Exception e) {
