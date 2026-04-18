@@ -5,6 +5,9 @@ spring:
   application:
     name: hssp-gateway
   cloud:
+    nacos:
+      discovery:
+        enabled: false # 禁用 Nacos 服务注册
     gateway:
       globalcors:
         cors-configurations:
@@ -41,3 +44,11 @@ spring:
             - Path=/mall/**
           filters:
             - StripPrefix=1 # 移除 /mall 前缀再转发，例如 /mall/goods/list -> /goods/list
+
+        # 积分兑换微服务
+        - id: hssp-points-route
+          uri: http://localhost:8083
+          predicates:
+            - Path=/points/**
+          filters:
+            - StripPrefix=1 # 移除 /points 前缀再转发，例如 /points/exchange -> /exchange

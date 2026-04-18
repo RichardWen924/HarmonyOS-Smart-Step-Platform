@@ -12,6 +12,7 @@ import javax.validation.constraints.NotNull;
 @NoArgsConstructor
 public class ChangeInfoDto {
     private String nickname;
+    private String email;
     private Short sex;
     private String avatar;
 }
