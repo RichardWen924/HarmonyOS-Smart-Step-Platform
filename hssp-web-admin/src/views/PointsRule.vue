@@ -1,23 +1,6 @@
 <template>
   <div class="points-rule-container">
-    <div class="side-nav">
-      <div class="logo">
-        <el-icon :size="24" color="#409EFF"><TrendCharts /></el-icon>
-        <span>步数积分管理系统</span>
-      </div>
-      <el-menu
-        default-active="1"
-        class="el-menu-vertical"
-      >
-        <el-menu-item index="1">
-          <el-icon><List /></el-icon>
-          <span>积分规则设置</span>
-        </el-menu-item>
-      </el-menu>
-      
-      <div class="user-info-section">
-      </div>
-    </div>
+    <SideBar />
 
     <div class="main-content">
       <div class="header-bar">
@@ -173,7 +156,8 @@
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useRouter } from 'vue-router';
-import { List, User, Plus, TrendCharts, ArrowDown, Delete } from '@element-plus/icons-vue';
+import { ArrowDown, Delete, EditPen } from '@element-plus/icons-vue';
+import SideBar from '../components/SideBar.vue';
 import { useUserStore } from '../stores/user';
 import { getPointsRulePage, addPointsRule, updatePointsRule, deletePointsRules } from '../api/points';
 
@@ -355,59 +339,8 @@ onMounted(() => {
 .points-rule-container {
   display: flex;
   height: 100vh;
-  background-color: #f8fafc; /* 更现代的淡蓝灰背景 */
+  background-color: #f8fafc;
   overflow: hidden;
-}
-
-/* Sidebar Styling */
-.side-nav {
-  width: 260px;
-  background-color: #1e293b; /* 深色主题边栏 */
-  display: flex;
-  flex-direction: column;
-  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
-  z-index: 100;
-}
-
-.logo {
-  height: 72px;
-  display: flex;
-  align-items: center;
-  padding: 0 24px;
-  gap: 12px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #f8fafc;
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.el-menu-vertical {
-  border-right: none;
-  flex: 1;
-  background-color: transparent;
-  padding-top: 16px;
-}
-
-:deep(.el-menu-item) {
-  height: 50px;
-  line-height: 50px;
-  margin: 4px 12px;
-  border-radius: 8px;
-  color: #94a3b8;
-}
-
-:deep(.el-menu-item.is-active) {
-  background-color: #3b82f6 !important;
-  color: #ffffff !important;
-}
-
-:deep(.el-menu-item:hover) {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #f8fafc;
-}
-
-.user-info-section {
-  display: none; /* 移动到顶部栏 */
 }
 
 /* Main Content Area */
@@ -430,11 +363,6 @@ onMounted(() => {
   z-index: 90;
 }
 
-.header-right {
-  display: flex;
-  align-items: center;
-}
-
 .user-profile {
   display: flex;
   align-items: center;
@@ -443,10 +371,6 @@ onMounted(() => {
   border-radius: 99px;
   transition: all 0.3s;
   cursor: pointer;
-  outline: none;
-}
-
-.user-profile:focus-visible {
   outline: none;
 }
 
@@ -467,7 +391,7 @@ onMounted(() => {
 }
 
 .table-card {
-  border-radius: 16px; /* 更圆润的边框 */
+  border-radius: 16px;
   border: none;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
@@ -484,17 +408,6 @@ onMounted(() => {
   gap: 16px;
 }
 
-/* 按钮样式美化 */
-.el-button {
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.el-button--primary:not(.is-link) {
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
 .title-group {
   display: flex;
   align-items: center;
@@ -507,12 +420,8 @@ onMounted(() => {
   color: #1e293b;
 }
 
-.points-text {
-  color: #10b981;
+.points-badge {
   font-weight: 700;
-  background: rgba(16, 185, 129, 0.1);
-  padding: 2px 8px;
-  border-radius: 4px;
 }
 
 .pagination-wrapper {
@@ -531,26 +440,29 @@ onMounted(() => {
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 8px 0; /* 缩小表头行距 */
+  padding: 12px 0;
 }
 
 .custom-table :deep(.el-table__row) td {
-  padding: 8px 0; /* 缩小数据行行距 */
+  padding: 12px 0;
 }
 
-/* 操作按钮样式优化 */
+:deep(.el-table__row) {
+  height: auto;
+}
+
 .table-ops {
   display: flex;
   justify-content: center;
-  gap: 4px; /* 进一步缩小按钮间距 */
+  gap: 4px;
 }
 
 .table-ops :deep(.el-button) {
   display: flex;
   align-items: center;
-  gap: 2px; /* 缩小图标和文字的间距 */
-  font-size: 13px; /* 稍微缩小字号 */
-  padding: 2px 4px; /* 缩小内边距 */
+  gap: 2px;
+  font-size: 13px;
+  padding: 2px 4px;
   border-radius: 4px;
   transition: all 0.2s;
 }
@@ -563,9 +475,6 @@ onMounted(() => {
   background-color: rgba(239, 68, 68, 0.1);
 }
 
-.table-ops .el-icon {
-  font-size: 16px;
-}
 /* Dialog Styling */
 :deep(.el-dialog) {
   border-radius: 20px;
