@@ -5,7 +5,7 @@
 
 class AppConfig {
   // API 基础URL
-  static readonly baseUrl: string = 'http://192.168.59.83:8080'
+  static readonly baseUrl: string = 'http://192.168.59.97:8080'
   
   // 请求超时时间（毫秒）
   static readonly timeout: number = 10000

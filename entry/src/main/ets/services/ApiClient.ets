@@ -637,23 +637,32 @@ class ApiClientImpl {
    */
   async getProducts(): Promise<ApiResponse<ExtendedProduct[]>> {
     console.log('=== ApiClient: 开始请求商品列表 ===')
+    // 添加时间戳参数避免缓存
+    const timestamp = new Date().getTime()
     const options: http.HttpRequestOptions = {
-      method: http.RequestMethod.GET
+      method: http.RequestMethod.GET,
+      header: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
     }
-
-    // 后端返回的是MallGoods对象，需要转换为前端期望的ExtendedProduct格式
+  
+    // 后端返回的是MallGoods对象，需要转换为前端期望的 ExtendedProduct格式
     interface BackendMallGoods {
       id: number;
       goodsName: string;
       requiredPoints: number;
       coverUrl?: string;
       displayNum?: number;
+      stock?: number;
+      salesCount?: number;
       isDeleted?: number;
       createTime?: string;
       updateTime?: string;
     }
-
-    const response = await this.request<BackendMallGoods[]>('/mall/products', options)
+  
+    // 添加时间戳避免缓存
+    const response = await this.request<BackendMallGoods[]>(`/mall/products?t=${timestamp}`, options)
     
     console.log('ApiClient: 后端响应 - code:', response.code)
     console.log('ApiClient: 后端响应 - message:', response.message)
@@ -662,8 +671,10 @@ class ApiClientImpl {
     // 转换字段名和数据结构
     if (response.code === 1 && response.data) {
       console.log('ApiClient: 开始转换数据...')
+      console.log('ApiClient: 后端返回的原始数据:', JSON.stringify(response.data))
       const products: ExtendedProduct[] = []
       for (const goods of response.data) {
+        console.log('ApiClient: 处理商品 - ID:', goods.id, '名称:', goods.goodsName, 'stock:', goods.stock, 'displayNum:', goods.displayNum)
         const product: ExtendedProduct = {
           id: goods.id,
           name: goods.goodsName,
@@ -671,13 +682,17 @@ class ApiClientImpl {
           points: goods.requiredPoints,
           pointsRequired: goods.requiredPoints,
           image: goods.coverUrl || '',
-          stock: goods.displayNum || 0,
+          stock: goods.stock !== undefined && goods.stock !== null ? goods.stock : 0,  // 直接使用stock字段作为库存
           type: 'physical',
           category: 'mall'
         }
+        console.log('ApiClient: 转换后商品 - ID:', product.id, '名称:', product.name, '库存:', product.stock)
         products.push(product)
       }
       console.log('ApiClient: 转换完成，共', products.length, '个商品')
+      if (products.length > 0) {
+        console.log('ApiClient: 第一个商品示例 - ID:', products[0].id, '名称:', products[0].name, '库存:', products[0].stock)
+      }
 
       const result: ApiResponse<ExtendedProduct[]> = {
         code: response.code,

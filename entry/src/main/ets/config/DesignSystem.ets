@@ -126,6 +126,7 @@ class AppIcons {
   static privacy = '🔒'
   static logout = '🚪'
   static network = '📡'
+  static refresh = '🔄'
   
   // 运动类型图标
   static walking = '🚶'

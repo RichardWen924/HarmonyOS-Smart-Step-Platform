@@ -20,8 +20,8 @@ import {
 export struct MallPage {
   @State products: ExtendedProduct[] = []
   @State userInfo: UserInfo | null = null
-  @State selectedFilter: string = 'all'
   @State isLoading: boolean = true
+  @State isRefreshing: boolean = false
 
   private stateStore = StateStore
   private apiClient = ApiClient
@@ -38,9 +38,6 @@ export struct MallPage {
 
   build() {
     Column() {
-      // 顶部标题栏 - 优化设计
-      this.buildHeader()
-
       // 用户积分信息
       this.buildPointsInfo()
 
@@ -52,28 +49,7 @@ export struct MallPage {
     .backgroundColor(AppColors.bgColor)
   }
 
-  // 构建顶部标题栏 - 优化设计
-  @Builder buildHeader() {
-    Row() {
-      Text(`${AppIcons.mall} 积分商城`)
-        .fontSize(AppFonts.fontSize2Xl)
-        .fontWeight(AppFonts.fontWeightBold)
-        .fontColor(AppColors.titleColor)
 
-      Blank()
-
-      // 筛选按钮 - 优化视觉
-      this.buildFilterButton()
-    }
-    .width('100%')
-    .padding({ 
-      left: AppSpacing.space3Xl, 
-      right: AppSpacing.space3Xl, 
-      top: AppSpacing.spaceXl, 
-      bottom: AppSpacing.spaceXl 
-    })
-    .backgroundColor(AppColors.bgCard)
-  }
 
   // 构建用户积分信息 - 优化视觉
   @Builder buildPointsInfo() {
@@ -93,6 +69,20 @@ export struct MallPage {
             .fontWeight(AppFonts.fontWeightBold)
             .fontColor(AppColors.warningColor)
         }
+
+        Blank()
+
+        // 刷新按钮
+        Button(this.isRefreshing ? '刷新中...' : `${AppIcons.refresh} 刷新`)
+          .fontSize(AppFonts.fontSizeBase)
+          .backgroundColor(AppColors.primaryColor)
+          .fontColor(Color.White)
+          .borderRadius(AppBorderRadius.radiusFull)
+          .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
+          .enabled(!this.isRefreshing)
+          .onClick(() => {
+            this.refreshProducts()
+          })
       }
 
       Row() {
@@ -114,26 +104,7 @@ export struct MallPage {
     .margin({ top: AppSpacing.spaceLg, left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
   }
 
-  // 构建筛选按钮 - 优化视觉
-  @Builder buildFilterButton() {
-    Row() {
-      ForEach(['all', 'virtual', 'physical'], (filter: string) => {
-        Button(this.getFilterLabel(filter))
-          .fontSize(AppFonts.fontSizeSm)
-          .backgroundColor(this.selectedFilter === filter ? AppColors.primaryColor : AppColors.bgColor)
-          .fontColor(this.selectedFilter === filter ? Color.White : AppColors.textColor)
-          .borderRadius(AppBorderRadius.radiusFull)
-          .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg })
-          .border({
-            width: this.selectedFilter === filter ? 0 : 1,
-            color: AppColors.borderColor
-          })
-          .onClick(() => {
-            this.selectedFilter = filter
-          })
-      })
-    }
-  }
+
 
   // 构建商品列表 - 优化视觉层次
   @Builder buildProductList() {
@@ -179,7 +150,7 @@ export struct MallPage {
           .alignItems(HorizontalAlign.Center)
         } else {
           // 商品列表
-          ForEach(this.getFilteredProducts(), (product: ExtendedProduct, index: number) => {
+          ForEach(this.products, (product: ExtendedProduct, index: number) => {
             this.buildProductCard(product, index)
           })
         }
@@ -241,6 +212,7 @@ export struct MallPage {
             Text(product.stock > 0 ? `库存: ${product.stock}` : '已售罄')
               .fontSize(AppFonts.fontSizeSm)
               .fontColor(product.stock > 0 ? AppColors.successColor : AppColors.errorColor)
+              .id(`stock-${product.id}`)
           }
         }
         .layoutWeight(1)
@@ -270,22 +242,17 @@ export struct MallPage {
     .margin({ bottom: AppSpacing.spaceLg })
   }
 
-  // 获取筛选后的商品列表
-  private getFilteredProducts(): ExtendedProduct[] {
-    if (this.selectedFilter === 'all') {
-      return this.products
-    }
-    return this.products.filter(product => product.type === this.selectedFilter)
-  }
-
-  // 获取筛选标签
-  private getFilterLabel(filter: string): string {
-    const labels: Record<string, string> = {
-      'all': '全部',
-      'virtual': '虚拟商品',
-      'physical': '实物商品'
-    }
-    return labels[filter] || filter
+  // 刷新商品列表
+  private async refreshProducts(): Promise<void> {
+    console.log('=== MallPage: 开始刷新商品列表 ===')
+    this.isRefreshing = true
+    await Promise.all([this.loadProducts(), this.loadUserInfo()])
+    this.isRefreshing = false
+    promptAction.showToast({
+      message: '刷新成功',
+      duration: 1500
+    })
+    console.log('=== MallPage: 商品刷新完成 ===')
   }
 
   // 加载商品列表
