@@ -1,13 +1,11 @@
 package com.hssp.service.mall.controller;
 
+import com.hssp.common.context.UserContext;
 import com.hssp.common.result.Result;
 import com.hssp.model.mall.dto.ExchangeOrderDto;
 import com.hssp.service.mall.service.MallOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/order")
@@ -16,8 +14,6 @@ public class OrderController {
     @Autowired
     private MallOrderService mallOrderService;
 
-    // TODO: 之后迁移至 Token 获取 UserId
-    private Long mockUserId = 1L;
 
     @PostMapping("/exchange")
     public Result exchange(@RequestBody ExchangeOrderDto dto) {
@@ -26,10 +22,17 @@ public class OrderController {
         }
         
         try {
-            mallOrderService.exchangeOrder(dto.getGoodsId(), mockUserId);
+            Long userId = UserContext.getUserId();
+            mallOrderService.exchangeOrder(dto.getGoodsId(), userId);
             return Result.success("兑换成功", null);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
+    }
+
+    @GetMapping("/list")
+    public Result list() {
+        Long userId = UserContext.getUserId();
+        return Result.success(mallOrderService.listUserOrders(userId));
     }
 }

@@ -5,4 +5,6 @@ import com.hssp.model.mall.po.MallGoods;
 
 public interface MallGoodsService extends IService<MallGoods> {
     void refreshGoodsCache();
+
+    void changeStatus(Long id, Integer status);
 }
