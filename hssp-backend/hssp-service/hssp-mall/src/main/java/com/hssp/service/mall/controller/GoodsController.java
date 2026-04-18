@@ -28,4 +28,15 @@ public class GoodsController {
         mallGoodsService.refreshGoodsCache();
         return Result.success("刷新缓存成功", mallGoodsService.list());
     }
+
+    @GetMapping("/page")
+    public Result page(@RequestParam(defaultValue = "1") int page,
+                       @RequestParam(defaultValue = "10") int size) {
+        return Result.success(mallGoodsService.page(page, size));
+    }
+
+    @GetMapping("/{id}")
+    public Result getById(@PathVariable Long id) {
+        return Result.success(mallGoodsService.getGoodsById(id));
+    }
 }
