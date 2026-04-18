@@ -64,7 +64,7 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column prop="email" label="邮箱" width="180" />
+            <el-table-column prop="email" label="邮箱" min-width="220" />
             <el-table-column prop="totalPoints" label="总积分" width="120" align="right">
               <template #default="{ row }">
                 <span class="numeric-text points">{{ row.totalPoints.toLocaleString() }}</span>
