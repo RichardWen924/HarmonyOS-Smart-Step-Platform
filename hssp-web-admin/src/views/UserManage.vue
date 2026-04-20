@@ -160,14 +160,9 @@
           </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="24">
             <el-form-item label="账户积分">
               <el-input-number v-model="form.totalPoints" :min="0" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="每日步数上限">
-              <el-input-number v-model="form.maxDailySteps" :min="0" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
