@@ -430,15 +430,37 @@ class StateStore {
 
   // 登录方法
   async login(userInfo: UserInfo, token: string): Promise<boolean> {
+    console.log('=== StateStore.login 开始 ===')
+    console.log('登录用户ID:', userInfo.id)
+    console.log('登录用户名:', userInfo.username)
+    console.log('当前 isLoggedIn:', this.isLoggedIn)
+    console.log('当前 userInfo ID:', this.userInfo.id)
+    
+    // 重要：先清除所有旧数据，避免显示上一个用户的信息
+    console.log('清除旧用户数据...')
+    await this.clearAllData()
+    console.log('旧数据已清除')
+    
     // 保存Token到持久化存储
+    console.log('保存Token...')
     const tokenSaved = await this.setToken(token)
     if (!tokenSaved) {
       console.error('Failed to save token during login')
       return false
     }
+    console.log('Token已保存')
 
-    // 保存用户信息
-    return await this.saveUserInfo(userInfo)
+    // 保存新用户信息
+    console.log('保存新用户信息...')
+    const userSaved = await this.saveUserInfo(userInfo)
+    console.log('用户信息保存结果:', userSaved)
+    console.log('保存后 isLoggedIn:', this.isLoggedIn)
+    console.log('保存后 userInfo ID:', this.userInfo.id)
+    console.log('保存后 totalSteps:', this.userInfo.totalSteps)
+    console.log('保存后 remainingSteps:', this.userInfo.remainingSteps)
+    console.log('=== StateStore.login 完成 ===')
+    
+    return userSaved
   }
 
   // 登出方法

@@ -13,6 +13,12 @@ export struct PointsExchangePage {
   @State exchangeSteps: string = ''
   @State isLoading: boolean = false
   @State pointRules: PointRule[] = []
+  
+  // 弹窗相关状态
+  @State showExchangeDialog: boolean = false
+  @State dialogInputSteps: string = ''
+  @State previewEarnedPoints: number = 0
+  @State selectedRule: PointRule | null = null
 
   private stateStore = StateStore
 
@@ -66,20 +72,7 @@ export struct PointsExchangePage {
       this.buildHeader()
 
       Scroll() {
-        Column() {
-          // 用户步数信息卡片
-          this.buildStepsInfoCard()
-
-          // 积分兑换规则说明
-          this.buildRulesCard()
-
-          // 步数输入区域
-          this.buildInputSection()
-
-
-        }
-        .width('100%')
-        .padding(16)
+        this.buildMainContent()
       }
       .layoutWeight(1)
     }
@@ -192,6 +185,19 @@ export struct PointsExchangePage {
               .fontSize(14)
               .fontColor('#333')
               .layoutWeight(1)
+            
+            Button('兑换')
+              .fontSize(12)
+              .backgroundColor('#007DFF')
+              .fontColor('#FFFFFF')
+              .borderRadius(16)
+              .padding({ left: 16, right: 16, top: 6, bottom: 6 })
+              .onClick(() => {
+                this.selectedRule = rule
+                this.dialogInputSteps = ''
+                this.previewEarnedPoints = 0
+                this.showExchangeDialog = true
+              })
           }
           .width('100%')
           .padding({ top: 6, bottom: 6 })
@@ -201,12 +207,6 @@ export struct PointsExchangePage {
           .fontSize(14)
           .fontColor('#666')
       }
-
-      Text('💡 系统会自动按最优规则组合兑换')
-        .fontSize(12)
-        .fontColor('#999')
-        .margin({ top: 12 })
-        .padding({ left: 12 })
     }
     .width('100%')
     .padding(16)
@@ -324,7 +324,244 @@ export struct PointsExchangePage {
     .borderRadius(12)
   }
 
+  @Builder
+  buildMainContent() {
+    Column() {
+      // 用户步数信息卡片
+      this.buildStepsInfoCard()
 
+      // 积分兑换规则说明
+      this.buildRulesCard()
+      
+      // 快速兑换弹窗
+      if (this.showExchangeDialog) {
+        this.buildExchangeDialog()
+      }
+    }
+    .width('100%')
+    .padding(16)
+  }
+
+
+
+  /**
+   * 计算给定步数能获得的积分（基于当前选中的规则）
+   */
+  private calculateEarnedPoints(steps: number): number {
+    if (!this.selectedRule || steps <= 0) {
+      return 0
+    }
+    
+    const exchangeCount = Math.floor(steps / this.selectedRule.stepsRequired)
+    return exchangeCount * this.selectedRule.pointsAwarded
+  }
+  
+  /**
+   * 更新预览积分
+   */
+  private updatePreviewPoints(value: string) {
+    this.dialogInputSteps = value
+    const steps = parseInt(value) || 0
+    this.previewEarnedPoints = this.calculateEarnedPoints(steps)
+  }
+  
+  @Builder
+  buildExchangeDialog() {
+    Column() {
+      // 半透明遮罩层
+      Column()
+        .width('100%')
+        .height('100%')
+        .backgroundColor('rgba(0, 0, 0, 0.5)')
+        .position({ x: 0, y: 0 })
+        .zIndex(999)
+        .onClick(() => {
+          this.showExchangeDialog = false
+        })
+      
+      // 弹窗内容
+      Column() {
+        // 标题
+        Row() {
+          Text('快速兑换')
+            .fontSize(18)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#333')
+          
+          Blank()
+          
+          Button('×')
+            .fontSize(20)
+            .backgroundColor(Color.Transparent)
+            .fontColor('#666')
+            .onClick(() => {
+              this.showExchangeDialog = false
+            })
+        }
+        .width('100%')
+        .margin({ bottom: 16 })
+        
+        // 规则说明
+        if (this.selectedRule) {
+          Text(`兑换规则：${this.selectedRule.stepsRequired.toLocaleString()} 步 → ${this.selectedRule.pointsAwarded} 积分`)
+            .fontSize(14)
+            .fontColor('#666')
+            .margin({ bottom: 16 })
+        }
+        
+        // 步数输入框
+        TextInput({ placeholder: '请输入要兑换的步数', text: this.dialogInputSteps })
+          .width('100%')
+          .height(50)
+          .borderRadius(8)
+          .backgroundColor('#F5F5F5')
+          .padding({ left: 12, right: 12 })
+          .type(InputType.Number)
+          .fontSize(16)
+          .onChange((value: string) => {
+            this.updatePreviewPoints(value)
+          })
+        
+        // 最大可兑换提示
+        Text(`最多可兑换：${this.todaySteps.toLocaleString()} 步`)
+          .fontSize(12)
+          .fontColor('#999')
+          .margin({ top: 8 })
+          .alignSelf(ItemAlign.Start)
+        
+        // 积分预览区域
+        Column() {
+          Text('预计获得积分')
+            .fontSize(14)
+            .fontColor('#666')
+            .margin({ bottom: 8 })
+          
+          Text(this.previewEarnedPoints.toLocaleString())
+            .fontSize(32)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#FF9500')
+          
+          Text('积分')
+            .fontSize(14)
+            .fontColor('#FF9500')
+            .margin({ top: 4 })
+        }
+        .width('100%')
+        .padding(20)
+        .backgroundColor('#FFF8E1')
+        .borderRadius(8)
+        .margin({ top: 16, bottom: 16 })
+        
+        // 确认按钮
+        Button('确认兑换')
+          .width('100%')
+          .height(45)
+          .fontSize(16)
+          .fontWeight(FontWeight.Medium)
+          .backgroundColor('#007DFF')
+          .fontColor('#FFFFFF')
+          .borderRadius(8)
+          .enabled(this.previewEarnedPoints > 0 && !this.isLoading)
+          .onClick(() => {
+            this.executeQuickExchange()
+          })
+      }
+      .width('85%')
+      .padding(20)
+      .backgroundColor('#FFFFFF')
+      .borderRadius(12)
+      .position({ x: '7.5%', y: '30%' })
+      .zIndex(1000)
+    }
+    .width('100%')
+    .height('100%')
+    .position({ x: 0, y: 0 })
+  }
+  
+  /**
+   * 执行快速兑换
+   */
+  async executeQuickExchange() {
+    const steps = parseInt(this.dialogInputSteps)
+    
+    if (!steps || steps <= 0) {
+      promptAction.showToast({ message: '请输入有效的步数', duration: 2000 })
+      return
+    }
+    
+    if (steps > this.todaySteps) {
+      promptAction.showToast({ message: `步数不能超过剩余步数 ${this.todaySteps}`, duration: 2000 })
+      return
+    }
+    
+    if (!this.selectedRule) {
+      promptAction.showToast({ message: '未选择积分规则', duration: 2000 })
+      return
+    }
+    
+    try {
+      this.isLoading = true
+      console.log('PointsExchangePage: 开始快速兑换，步数:', steps, '规则ID:', this.selectedRule.id)
+      
+      // 传递选中的规则ID
+      const result = await ApiClient.exchangePoints(steps, this.selectedRule.id)
+      console.log('PointsExchangePage: 兑换结果:', JSON.stringify(result))
+      
+      if (result.code === 1) {
+        promptAction.showToast({
+          message: `兑换成功！获得 ${result.data.gainedPoints?.toLocaleString()} 积分`,
+          duration: 2000
+        })
+        
+        // 更新界面数据
+        const newRemainingSteps = result.data.remainingSteps || 0
+        const newTotalPoints = result.data.totalPoints || 0
+        
+        this.exchangeSteps = ''
+        this.dialogInputSteps = ''
+        this.showExchangeDialog = false
+        
+        setTimeout(() => {
+          this.todaySteps = newRemainingSteps
+          this.totalPoints = newTotalPoints
+          
+          console.log('PointsExchangePage: 界面已更新 - 剩余步数:', this.todaySteps, '总积分:', this.totalPoints)
+          
+          // 更新本地存储
+          this.stateStore.updateTodaySteps(this.todaySteps)
+          this.stateStore.updatePoints(this.totalPoints, this.todaySteps)
+          
+          // 返回主页
+          setTimeout(() => {
+            router.back()
+          }, 1500)
+        }, 100)
+      } else {
+        // 显示后端返回的错误信息
+        const errorMsg = result.message || '兑换失败'
+        console.error('PointsExchangePage: 兑换失败，错误码:', result.code, '消息:', errorMsg)
+        promptAction.showToast({
+          message: errorMsg,
+          duration: 3000
+        })
+      }
+    } catch (error) {
+      // 显示详细的错误信息
+      let errorMessage = '网络请求失败'
+      if (error instanceof Error) {
+        errorMessage = error.message
+      } else {
+        errorMessage = String(error)
+      }
+      console.error('PointsExchangePage: 兑换异常:', errorMessage)
+      promptAction.showToast({ 
+        message: `兑换失败: ${errorMessage}`, 
+        duration: 3000 
+      })
+    } finally {
+      this.isLoading = false
+    }
+  }
 
   async loadPointRules() {
     try {
@@ -427,17 +664,28 @@ export struct PointsExchangePage {
             }, 1500)
           }, 100)
         } else {
-          console.error('PointsExchangePage: 兑换失败，错误码:', result.code, '消息:', result.message)
+          // 显示后端返回的错误信息
+          const errorMsg = result.message || '兑换失败'
+          console.error('PointsExchangePage: 兑换失败，错误码:', result.code, '消息:', errorMsg)
           promptAction.showToast({
-            message: `兑换失败: ${result.message}`,
-            duration: 2000
+            message: errorMsg,
+            duration: 3000
           })
         }
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error('PointsExchangePage: 兑换失败:', errorMessage)
-      promptAction.showToast({ message: `兑换失败: ${errorMessage}`, duration: 2000 })
+      // 显示详细的错误信息
+      let errorMessage = '网络请求失败'
+      if (error instanceof Error) {
+        errorMessage = error.message
+      } else {
+        errorMessage = String(error)
+      }
+      console.error('PointsExchangePage: 兑换异常:', errorMessage)
+      promptAction.showToast({ 
+        message: `兑换失败: ${errorMessage}`, 
+        duration: 3000 
+      })
     } finally {
       this.isLoading = false
     }

@@ -442,14 +442,20 @@ export struct ProfilePage {
       } else {
         promptAction.showToast({
           message: response.message || '修改失败',
-          duration: 2000
+          duration: 3000
         })
       }
     } catch (error) {
       console.error('Failed to update password:', error)
+      let errorMessage = '网络请求失败'
+      if (error instanceof Error) {
+        errorMessage = error.message
+      } else {
+        errorMessage = String(error)
+      }
       promptAction.showToast({
-        message: '修改密码失败',
-        duration: 2000
+        message: `修改密码失败: ${errorMessage}`,
+        duration: 3000
       })
     }
   }
@@ -575,14 +581,20 @@ export struct ProfilePage {
       } else {
         promptAction.showToast({
           message: response.message || '修改失败',
-          duration: 2000
+          duration: 3000
         })
       }
     } catch (error) {
       console.error('Failed to update password:', error)
+      let errorMessage = '网络请求失败'
+      if (error instanceof Error) {
+        errorMessage = error.message
+      } else {
+        errorMessage = String(error)
+      }
       promptAction.showToast({
-        message: '修改密码失败',
-        duration: 2000
+        message: `修改密码失败: ${errorMessage}`,
+        duration: 3000
       })
     }
   }

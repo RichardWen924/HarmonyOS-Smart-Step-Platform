@@ -554,17 +554,31 @@ export struct LoginPage {
           })
         }, 1500)
       } else {
-        console.error('Login failed:', response.message)
+        console.error('=== 登录失败 ===')
+        console.error('response.code:', response.code)
+        console.error('response.message:', response.message)
+        console.error('response.data:', response.data)
+        
+        // 优先显示后端返回的具体错误信息
+        const errorMsg = response.message || '登录失败'
+        console.error('显示错误信息:', errorMsg)
+        
         promptAction.showToast({
-          message: response.message,
-          duration: 2000
+          message: errorMsg,
+          duration: 3000
         })
       }
     } catch (error) {
       console.error('Login failed:', error)
+      let errorMessage = '网络请求失败'
+      if (error instanceof Error) {
+        errorMessage = error.message
+      } else {
+        errorMessage = String(error)
+      }
       promptAction.showToast({
-        message: error.message.includes('Mock数据') ? '登录成功（测试模式）' : '登录失败，请检查网络连接',
-        duration: 2000
+        message: `登录失败: ${errorMessage}`,
+        duration: 3000
       })
     } finally {
       this.isLoading = false
@@ -615,15 +629,21 @@ export struct LoginPage {
       } else {
         console.error('Register failed:', response.message)
         promptAction.showToast({
-          message: response.message,
-          duration: 2000
+          message: response.message || '注册失败',
+          duration: 3000
         })
       }
     } catch (error) {
       console.error('Register failed:', error)
+      let errorMessage = '网络请求失败'
+      if (error instanceof Error) {
+        errorMessage = error.message
+      } else {
+        errorMessage = String(error)
+      }
       promptAction.showToast({
-        message: error.message.includes('Mock数据') ? '注册成功（测试模式）' : '注册失败，请检查网络连接',
-        duration: 2000
+        message: `注册失败: ${errorMessage}`,
+        duration: 3000
       })
     } finally {
       this.isLoading = false

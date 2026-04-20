@@ -392,18 +392,25 @@ export struct MallPage {
             await this.loadUserInfo()
             await this.loadProducts()
           } else {
-            console.error('MallPage: 兑换失败 -', exchangeResult.message)
+            // 显示后端返回的错误信息
+            const errorMsg = exchangeResult.message || '兑换失败'
+            console.error('MallPage: 兑换失败 -', errorMsg)
             promptAction.showToast({
-              message: exchangeResult.message || '兑换失败',
-              duration: 2000
+              message: errorMsg,
+              duration: 3000
             })
           }
         } catch (error) {
           console.error('MallPage: 兑换异常:', error)
-          const errorMessage = error instanceof Error ? error.message : String(error)
+          let errorMessage = '网络请求失败'
+          if (error instanceof Error) {
+            errorMessage = error.message
+          } else {
+            errorMessage = String(error)
+          }
           promptAction.showToast({
-            message: `兑换失败: ${errorMessage.includes('Authentication') ? '请重新登录' : errorMessage}`,
-            duration: 2500
+            message: `兑换失败: ${errorMessage}`,
+            duration: 3000
           })
         }
       } else {

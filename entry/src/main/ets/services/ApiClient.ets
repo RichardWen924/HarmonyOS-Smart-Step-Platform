@@ -117,24 +117,59 @@ class ApiClientImpl {
 
       if (response.responseCode === 200) {
         try {
-          const result = JSON.parse(response.result as string) as ApiResponse<T>
+          // 定义后端响应接口，兼容 msg 和 message 字段
+          interface BackendResponse<T> {
+            code: number;
+            msg?: string;
+            message?: string;
+            data: T;
+          }
+          
+          const result = JSON.parse(response.result as string) as BackendResponse<T>
           console.log(`API Response for ${endpoint}:`, result)
-          return result
+          
+          // 转换为前端期望的 ApiResponse 格式
+          const apiResponse: ApiResponse<T> = {
+            code: result.code,
+            message: result.message || result.msg || '',
+            data: result.data
+          }
+          
+          return apiResponse
         } catch (parseError) {
           console.error('Failed to parse response:', parseError)
           throw new Error('Invalid response format')
         }
-      } else if (response.responseCode === 401) {
-        // Token 过期或无效
-        this.clearToken()
-        throw new Error('Authentication failed')
-      } else if (response.responseCode >= 500 && retryCount < this.maxRetries) {
-        // 服务器错误，重试
-        console.log(`Retrying request (${retryCount + 1}/${this.maxRetries})...`)
-        await this.delay(this.retryDelay)
-        return this.request<T>(endpoint, options, retryCount + 1)
       } else {
-        throw new Error(`HTTP ${response.responseCode}: ${response.result}`)
+        // 尝试解析后端返回的错误信息
+        let errorMessage = `HTTP ${response.responseCode}`
+        try {
+          // 定义后端响应接口，兼容 msg 和 message 字段
+          interface BackendResponse<T> {
+            code: number;
+            msg?: string;
+            message?: string;
+            data: T;
+          }
+          
+          const errorResult = JSON.parse(response.result as string) as BackendResponse<T>
+          // 兼容后端使用 'msg' 或 'message' 字段
+          if (errorResult.message) {
+            errorMessage = errorResult.message
+          } else if (errorResult.msg) {
+            errorMessage = errorResult.msg
+          }
+        } catch (e) {
+          // 如果无法解析JSON，使用原始响应
+          errorMessage = response.result as string || `HTTP ${response.responseCode}`
+        }
+        
+        // Token 过期或无效
+        if (response.responseCode === 401) {
+          this.clearToken()
+        }
+        
+        throw new Error(errorMessage)
       }
     } catch (error) {
       console.error(`Request failed for ${url}:`, error)
@@ -573,10 +608,22 @@ class ApiClientImpl {
 
   /**
    * 步数兑换积分
+   * @param steps 兑换的步数
+   * @param ruleId 可选，指定使用的积分规则ID
    */
-  async exchangePoints(steps: number): Promise<ApiResponse<ExchangeResponse>> {
-    const requestData: ExchangeRequest = {
+  async exchangePoints(steps: number, ruleId?: number): Promise<ApiResponse<ExchangeResponse>> {
+    interface ExchangeRequestWithRule {
+      steps: number;
+      ruleId?: number;
+    }
+    
+    const requestData: ExchangeRequestWithRule = {
       steps: steps
+    }
+    
+    // 如果指定了规则ID，添加到请求中
+    if (ruleId !== undefined) {
+      requestData.ruleId = ruleId
     }
 
     const options: http.HttpRequestOptions = {
