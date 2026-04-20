@@ -97,6 +97,7 @@ export interface RegisterRequest {
   username: string;
   email: string;
   verification: string;
+  password?: string;
 }
 
 // 验证码请求

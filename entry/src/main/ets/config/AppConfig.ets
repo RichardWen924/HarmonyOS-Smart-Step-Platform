@@ -5,7 +5,7 @@
 
 class AppConfig {
   // API 基础URL
-  static readonly baseUrl: string = 'http://192.168.59.97:8080'
+  static readonly baseUrl: string = 'http://192.168.59.99:8080'
   
   // 请求超时时间（毫秒）
   static readonly timeout: number = 10000
@@ -36,6 +36,9 @@ class AppConfig {
   
   // 步数兑换比例（步数:积分）
   static readonly exchangeRate: number = 100
+  
+  // 是否启用手劢输入步数功能
+  static readonly enableManualStepInput: boolean = false
 }
 
 export default AppConfig

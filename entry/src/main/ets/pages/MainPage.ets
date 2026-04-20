@@ -2,6 +2,7 @@ import router from '@ohos.router'
 import promptAction from '@ohos.promptAction'
 import StateStore from '../services/StateStore'
 import ApiClient from '../services/ApiClient'
+import AppConfig from '../config/AppConfig'
 import { StepRecord, UserInfo, Product, ExchangeRecord, PageData } from '../types/common'
 import {
   AppColors,
@@ -96,8 +97,8 @@ struct MainPage {
             .height('100%')
         }
 
-        // 手动输入步数对话框
-        if (this.showStepInput) {
+        // 手动输入步数对话框（根据配置显示）
+        if (this.showStepInput && AppConfig.enableManualStepInput) {
           this.buildStepInputDialog()
         }
       }
@@ -410,9 +411,6 @@ struct HomePage {
 
           // 快捷功能
           this.buildQuickActions()
-
-          // 排行榜入口
-          this.buildRankingEntry()
         }
         .width('100%')
         .padding(AppSpacing.spaceLg)
@@ -617,28 +615,30 @@ struct HomePage {
           })
         }
 
-        // 功能4: 手动输入步数
-        GridItem() {
-          Column() {
-            Text(AppIcons.steps)
-              .fontSize(32)
-              .margin({ bottom: AppSpacing.spaceSm })
+        // 功能4: 手动输入步数（根据配置显示）
+        if (AppConfig.enableManualStepInput) {
+          GridItem() {
+            Column() {
+              Text(AppIcons.steps)
+                .fontSize(32)
+                .margin({ bottom: AppSpacing.spaceSm })
 
-            Text('手动输入步数')
-              .fontSize(AppFonts.fontSizeSm)
-              .fontColor(AppColors.textColor)
-              .fontWeight(AppFonts.fontWeightMedium)
+              Text('手动输入步数')
+                .fontSize(AppFonts.fontSizeSm)
+                .fontColor(AppColors.textColor)
+                .fontWeight(AppFonts.fontWeightMedium)
+            }
+            .width('100%')
+            .height(100)
+            .padding(AppSpacing.spaceLg)
+            .backgroundColor(AppColors.successLight)
+            .borderRadius(AppBorderRadius.radiusBase)
+            .justifyContent(FlexAlign.Center)
+            .onClick(() => {
+              console.log('HomePage: 点击手动输入步数按钮')
+              this.showStepInputDialog()
+            })
           }
-          .width('100%')
-          .height(100)
-          .padding(AppSpacing.spaceLg)
-          .backgroundColor(AppColors.successLight)
-          .borderRadius(AppBorderRadius.radiusBase)
-          .justifyContent(FlexAlign.Center)
-          .onClick(() => {
-            console.log('HomePage: 点击手动输入步数按钮')
-            this.showStepInputDialog()
-          })
         }
       }
       .columnsTemplate('1fr 1fr')

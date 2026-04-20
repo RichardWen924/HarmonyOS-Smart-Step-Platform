@@ -595,7 +595,8 @@ export struct LoginPage {
       const response = await this.apiClient.register(
         this.nickname,  // username
         this.email,
-        this.verificationCode
+        this.verificationCode,
+        this.password  // 用户输入的密码
       )
 
       if (response.code === 1) {

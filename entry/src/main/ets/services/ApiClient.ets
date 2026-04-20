@@ -316,29 +316,63 @@ class ApiClientImpl {
   /**
    * 用户注册
    */
-  async register(username: string, email: string, code: string): Promise<ApiResponse<void>> {
-    const requestData: RegisterRequest = {
-      username: username,
-      email: email,
-      verification: code
+  async register(username: string, email: string, code: string, password?: string): Promise<ApiResponse<void>> {
+    // 构建请求数据，如果提供了密码则包含该字段
+    if (password) {
+      const requestData: RegisterRequest = {
+        username: username,
+        email: email,
+        verification: code,
+        password: password
+      }
+
+      const options: http.HttpRequestOptions = {
+        method: http.RequestMethod.POST,
+        extraData: JSON.stringify(requestData)
+      }
+
+      const response = await this.request<void>('/user/register', options)
+
+      // 注册接口后端只返回success消息,不返回token
+      // 注册成功后应该跳转到登录页面,而不是自动登录
+      console.log('=== Register Response Debug ===')
+      console.log('response.code:', response.code)
+      console.log('response.message:', response.message)
+      console.log('Note: Register endpoint does not return token, user should login after registration')
+      console.log('==================================')
+
+      return response
+    } else {
+      // 定义注册请求接口（不包含密码字段）
+      interface RegisterWithoutPassword {
+        username: string;
+        email: string;
+        verification: string;
+      }
+
+      const requestData: RegisterWithoutPassword = {
+        username: username,
+        email: email,
+        verification: code
+      }
+
+      const options: http.HttpRequestOptions = {
+        method: http.RequestMethod.POST,
+        extraData: JSON.stringify(requestData)
+      }
+
+      const response = await this.request<void>('/user/register', options)
+
+      // 注册接口后端只返回success消息,不返回token
+      // 注册成功后应该跳转到登录页面,而不是自动登录
+      console.log('=== Register Response Debug ===')
+      console.log('response.code:', response.code)
+      console.log('response.message:', response.message)
+      console.log('Note: Register endpoint does not return token, user should login after registration')
+      console.log('==================================')
+
+      return response
     }
-
-    const options: http.HttpRequestOptions = {
-      method: http.RequestMethod.POST,
-      extraData: JSON.stringify(requestData)
-    }
-
-    const response = await this.request<void>('/user/register', options)
-
-    // 注册接口后端只返回success消息,不返回token
-    // 注册成功后应该跳转到登录页面,而不是自动登录
-    console.log('=== Register Response Debug ===')
-    console.log('response.code:', response.code)
-    console.log('response.message:', response.message)
-    console.log('Note: Register endpoint does not return token, user should login after registration')
-    console.log('==================================')
-
-    return response
   }
 
   /**

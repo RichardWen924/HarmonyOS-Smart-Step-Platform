@@ -75,11 +75,6 @@ export struct RecordPage {
 
   @Builder buildFilterHeader() {
     Row() {
-      Text('活动记录')
-        .fontSize(AppFonts.fontSize2Xl)
-        .fontColor(AppColors.titleColor)
-        .fontWeight(AppFonts.fontWeightBold)
-
       Blank()
 
       Row() {
