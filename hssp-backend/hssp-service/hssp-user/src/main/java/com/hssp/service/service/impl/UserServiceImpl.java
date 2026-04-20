@@ -140,11 +140,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         //验证码为空，即选择了用户名/邮箱加密码的登录方式
         else{
             if(Username!=null){
-                String encodePassword = passwordEncoder.encode(password);
                 log.info("用户名+密码登录");
                 User user=lambdaQuery()
                         .eq(User::getUsername, Username)
                         .one();
+                if(user == null){
+                    throw new BusinessException("用户名或密码错误");
+                }
                 boolean rightPassword=passwordEncoder.matches(password, user.getPassword());
                 if(!rightPassword){
                     throw new BusinessException("用户名或密码错误");
@@ -154,11 +156,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 return token;
             }
             else if(email!=null){
-                String encodePassword = passwordEncoder.encode(password);
                 log.info("邮箱+密码登录");
                 User user=lambdaQuery()
                         .eq(User::getEmail, email)
                         .one();
+                if(user == null){
+                    throw new BusinessException("用户名或密码错误");
+                }
                 boolean rightPassword=passwordEncoder.matches(password, user.getPassword());
                 if(!rightPassword){
                     throw new BusinessException("用户名或密码错误");

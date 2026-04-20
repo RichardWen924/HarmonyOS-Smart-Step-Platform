@@ -78,6 +78,20 @@ public class UserPointsServiceImpl implements UserPointsService {
         }
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void exchangePointsWithCalculatedPoints(Integer steps, Integer earnedPoints, Long userId) {
+        if (steps == null || steps <= 0) {
+            throw new RuntimeException("步数不合法");
+        }
+        if (earnedPoints == null || earnedPoints <= 0) {
+            throw new RuntimeException("积分不合法");
+        }
+        
+        log.info("用户 {} 使用指定积分兑换 - 步数: {}, 积分: {}", userId, steps, earnedPoints);
+        processPointsExchange(steps, earnedPoints, userId);
+    }
+
     /**
      * 处理积分兑换的核心逻辑
      */

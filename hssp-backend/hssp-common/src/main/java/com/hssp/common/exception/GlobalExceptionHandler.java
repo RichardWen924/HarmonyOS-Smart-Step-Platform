@@ -15,6 +15,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public Result businessException(BusinessException e) {
         log.error("业务异常：{}", e.getMessage());
+        
+        // 对于登录、注册等用户友好的错误信息，直接返回原始消息
+        String message = e.getMessage();
+        if (message != null && (
+            message.contains("密码") || 
+            message.contains("用户名") || 
+            message.contains("邮箱") || 
+            message.contains("验证码") ||
+            message.contains("登录") ||
+            message.contains("注册")
+        )) {
+            return Result.error(message);
+        }
+        
+        // 其他业务异常添加前缀
         return Result.error("业务异常：" + e.getMessage());
     }
 

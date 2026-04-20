@@ -9,10 +9,12 @@ import com.hssp.model.mall.dto.ExchangePointsDto;
 import com.hssp.service.mall.mapper.PointRulesMapper;
 import com.hssp.service.mall.service.UserPointsService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/")
 @RequiredArgsConstructor
@@ -114,30 +116,54 @@ public class PointsController {
             // 从 Token 中获取用户ID
             Long userId = UserContext.getUserId();
             
-            // 预览兑换结果，计算获得的积分
-            List<PointRules> activeRules = pointRulesMapper.selectList(
-                new LambdaQueryWrapper<PointRules>()
-                    .eq(PointRules::getIsActive, PointRules_Status.ENABLE)
-                    .orderByAsc(PointRules::getStepsRequired)
-            );
-            
             int earnedPoints = 0;
-            if (activeRules == null || activeRules.isEmpty()) {
-                earnedPoints = dto.getSteps() / 1000;
+            
+            // 如果指定了规则ID，使用指定规则
+            if (dto.getRuleId() != null) {
+                PointRules selectedRule = pointRulesMapper.selectById(dto.getRuleId());
+                if (selectedRule == null || selectedRule.getIsActive() != PointRules_Status.ENABLE) {
+                    return Result.error("指定的积分规则不存在或已禁用");
+                }
+                
+                // 计算可兑换次数
+                int exchangeCount = dto.getSteps() / selectedRule.getStepsRequired();
+                if (exchangeCount == 0) {
+                    return Result.error("步数不足，无法兑换积分");
+                }
+                
+                earnedPoints = exchangeCount * selectedRule.getPointsAwarded();
+                
+                log.info("用户 {} 使用指定规则 [{}] 兑换步数: {}, 兑换次数: {}, 获得积分: {}", 
+                    userId, selectedRule.getRuleName(), dto.getSteps(), exchangeCount, earnedPoints);
             } else {
-                int remainingSteps = dto.getSteps();
-                for (PointRules rule : activeRules) {
-                    if (remainingSteps < rule.getStepsRequired()) {
-                        continue;
+                // 未指定规则，使用最优组合
+                List<PointRules> activeRules = pointRulesMapper.selectList(
+                    new LambdaQueryWrapper<PointRules>()
+                        .eq(PointRules::getIsActive, PointRules_Status.ENABLE)
+                        .orderByAsc(PointRules::getStepsRequired)
+                );
+                
+                if (activeRules == null || activeRules.isEmpty()) {
+                    earnedPoints = dto.getSteps() / 1000;
+                } else {
+                    int remainingSteps = dto.getSteps();
+                    for (PointRules rule : activeRules) {
+                        if (remainingSteps < rule.getStepsRequired()) {
+                            continue;
+                        }
+                        int exchangeCount = remainingSteps / rule.getStepsRequired();
+                        earnedPoints += exchangeCount * rule.getPointsAwarded();
+                        remainingSteps -= exchangeCount * rule.getStepsRequired();
                     }
-                    int exchangeCount = remainingSteps / rule.getStepsRequired();
-                    earnedPoints += exchangeCount * rule.getPointsAwarded();
-                    remainingSteps -= exchangeCount * rule.getStepsRequired();
                 }
             }
             
-            // 执行兑换
-            userPointsService.exchangePoints(dto.getSteps(), userId);
+            if (earnedPoints == 0) {
+                return Result.error("步数不足，无法兑换积分");
+            }
+            
+            // 执行兑换（使用已计算的积分）
+            userPointsService.exchangePointsWithCalculatedPoints(dto.getSteps(), earnedPoints, userId);
             
             // 查询兑换后的用户信息
             com.hssp.model.user.po.User user = userPointsService.getUserById(userId);
