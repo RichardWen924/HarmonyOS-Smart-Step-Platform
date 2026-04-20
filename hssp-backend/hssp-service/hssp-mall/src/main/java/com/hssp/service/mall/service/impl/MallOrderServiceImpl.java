@@ -8,7 +8,9 @@ import com.hssp.model.user.po.User;
 import com.hssp.service.mall.mapper.MallGoodsMapper;
 import com.hssp.service.mall.mapper.MallOrderMapper;
 import com.hssp.service.mall.mapper.UserMapper;
+import com.hssp.service.mall.service.MallGoodsService;
 import com.hssp.service.mall.service.MallOrderService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,7 @@ import java.util.List;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 
 @Service
+@Slf4j
 public class MallOrderServiceImpl extends ServiceImpl<MallOrderMapper, MallOrder> implements MallOrderService {
 
     @Autowired
@@ -26,6 +29,9 @@ public class MallOrderServiceImpl extends ServiceImpl<MallOrderMapper, MallOrder
 
     @Autowired
     private UserMapper userMapper;
+    
+    @Autowired
+    private MallGoodsService mallGoodsService;
 
     @Override
     @Transactional
@@ -68,12 +74,26 @@ public class MallOrderServiceImpl extends ServiceImpl<MallOrderMapper, MallOrder
         int userUpdateResult = userMapper.updateById(user);
         System.out.println("用户积分更新结果: " + userUpdateResult + " 行");
 
-        // 4. 增加销量/库存
+        // 4. 检查并扣减库存
+        if (goods.getStock() == null || goods.getStock() <= 0) {
+            System.err.println("商品库存不足: stock=" + goods.getStock());
+            throw new RuntimeException("商品库存不足");
+        }
+        
+        goods.setStock(goods.getStock() - 1);
+        System.out.println("扣减库存: 原库存=" + (goods.getStock() + 1) + ", 新库存=" + goods.getStock());
+        
+        // 5. 增加销量（使用 displayNum）
+        if (goods.getDisplayNum() == null) {
+            goods.setDisplayNum(0);
+        }
         goods.setDisplayNum(goods.getDisplayNum() + 1);
+        System.out.println("增加销量: 新销量=" + goods.getDisplayNum());
+        
         int goodsUpdateResult = mallGoodsMapper.updateById(goods);
-        System.out.println("商品销量更新结果: " + goodsUpdateResult + " 行");
+        System.out.println("商品信息更新结果: " + goodsUpdateResult + " 行");
 
-        // 5. 插入订单记录
+        // 6. 插入订单记录
         MallOrder order = new MallOrder();
         order.setUserId(userId);
         order.setGoodsId(goodsId);
@@ -84,6 +104,45 @@ public class MallOrderServiceImpl extends ServiceImpl<MallOrderMapper, MallOrder
         System.out.println("订单插入结果: " + orderInsertResult + " 行");
         
         System.out.println("=== MallOrderService: 兑换成功 ===");
+        
+        // 7. 清除商品缓存（在事务提交后执行）
+        // 使用 @Transactional 的 afterCommit 回调确保在事务提交后清除缓存
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+            new org.springframework.transaction.support.TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        mallGoodsService.refreshGoodsCache();
+                        System.out.println("已清除商品缓存（事务提交后）");
+                    } catch (Exception e) {
+                        System.err.println("清除商品缓存失败: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            }
+        );
+    }
+
+    @Override
+    public List<MallOrder> listUserOrders(Long userId) {
+        return baseMapper.selectList(new LambdaQueryWrapper<MallOrder>()
+                .eq(MallOrder::getUserId, userId)
+                .orderByDesc(MallOrder::getExchangeTime));
+    }
+
+    @Override
+    public void updateOrderStatus(OrderStatusUpdateDto dto) {
+        MallOrder order = baseMapper.selectById(dto.getOrderId());
+        if (order == null) {
+            throw new RuntimeException("订单不存在");
+        }
+        if (dto.getStatus() != null) {
+            order.setStatus(dto.getStatus());
+        }
+        if (dto.getTrackingNumber() != null) {
+            order.setTrackingNumber(dto.getTrackingNumber());
+        }
+        baseMapper.updateById(order);
     }
 
     @Override

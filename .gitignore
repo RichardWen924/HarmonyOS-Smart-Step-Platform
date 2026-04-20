@@ -8,3 +8,12 @@ node_modules/
 **/application-dev.yml
 
 .env
+
+
+
+# 忽略 HarmonyOS 编译输出和缓存
+**/build/
+**/.cxx/
+**/.preview/
+**/node_modules/
+**/oh_modules/
