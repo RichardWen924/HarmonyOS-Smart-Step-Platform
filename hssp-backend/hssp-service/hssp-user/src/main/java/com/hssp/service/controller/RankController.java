@@ -27,14 +27,14 @@ public class RankController {
      *
      * @param periodType 周期类型：day（日排行）、week（周排行）、month（月排行）
      * @param pageNum 请求拉取的页码 (默认第一页)
-     * @param pageSize 每页的个数 (默认10)
+     * @param pageSize 每页的个数 (默认1000，确保能获取所有用户)
      * @return Result
      */
     @GetMapping("/rankings")
     public Result getRankList(
             @RequestParam(defaultValue = "day") String periodType,
             @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "100") int pageSize) {
+            @RequestParam(defaultValue = "1000") int pageSize) {
 
         // 从 UserContext 获取当前登录用户ID
         Long currentUserId = UserContext.getUserId();

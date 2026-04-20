@@ -11,13 +11,17 @@ CREATE TABLE `mall_goods` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品表';
 
 CREATE TABLE `mall_order` (
-  `id` BIGINT NOT NULL COMMENT '订单ID（雪花）',
-  `user_id` BIGINT NOT NULL COMMENT '用户ID',
-  `goods_id` BIGINT NOT NULL COMMENT '商品ID',
-  `points_consumed` INT NOT NULL COMMENT '消耗积分',
-  `exchange_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '兑换时间',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单表';
+  `id` bigint NOT NULL COMMENT '订单主键ID (分布式ID)',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `goods_id` bigint NOT NULL COMMENT '商品ID',
+  `points_consumed` int NOT NULL COMMENT '消耗积分数量',
+  `status` tinyint DEFAULT '0' COMMENT '订单状态：0-待发货, 1-已发货, 2-已完成, 3-已取消',
+  `tracking_number` varchar(100) DEFAULT NULL COMMENT '物流单号',
+  `exchange_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '兑换时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_exchange_time` (`exchange_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商城订单记录表';
 
 CREATE TABLE `user_points` (
   `user_id` BIGINT NOT NULL COMMENT '用户ID（关联User表）',

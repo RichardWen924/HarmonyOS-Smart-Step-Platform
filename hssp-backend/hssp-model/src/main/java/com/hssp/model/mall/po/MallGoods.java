@@ -23,6 +23,8 @@ public class MallGoods implements Serializable {
 
     private Integer displayNum;
 
+    private Integer stock;  // 库存数量
+
     private Integer isDeleted;
 
     private Date createTime;
