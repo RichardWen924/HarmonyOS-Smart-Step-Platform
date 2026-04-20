@@ -96,8 +96,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         user.setEmail(registerDto.getEmail());
         user.setNickname(registerDto.getUsername());  // 昵称默认与用户名相同
         
-        // 密码加密（使用默认密码）
-        String rawPassword = DEFAULT_PASSWORD;
+        // 密码加密（使用用户输入的密码）
+        String rawPassword = registerDto.getPassword();
         String encodedPassword = passwordEncoder.encode(rawPassword);
         log.info("🔐 密码加密完成");
         

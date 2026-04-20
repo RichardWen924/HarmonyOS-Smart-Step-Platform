@@ -20,4 +20,7 @@ public class RegisterDto {
 
     @NotNull(message = "验证码不能为空")
     private String verification;
+    
+    @NotNull(message = "密码不能为空")
+    private String password;
 }
