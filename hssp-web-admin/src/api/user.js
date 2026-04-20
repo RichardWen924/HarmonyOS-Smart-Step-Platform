@@ -1,6 +1,30 @@
 import request from '../utils/request'
 
 /**
+ * 查询用户分页列表
+ * @param {Object} params { current, size }
+ */
+export const getUserPage = (params) => {
+    return request({
+        url: '/admin/user/page',
+        method: 'get',
+        params
+    })
+}
+
+/**
+ * 重置用户密码
+ * @param {number} id 用户ID
+ */
+export const resetPassword = (id) => {
+    return request({
+        url: '/admin/user/password',
+        method: 'put',
+        params: { id }
+    })
+}
+
+/**
  * 查询用户列表
  */
 export const getUserList = () => {

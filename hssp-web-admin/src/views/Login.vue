@@ -11,61 +11,24 @@
       <div class="login-right">
         <div class="form-wrapper">
           <div class="form-header">
-            <h2>{{ isLogin ? '欢迎回来' : '快速注册' }}</h2>
-            <p>{{ isLogin ? '请登录您的管理端账号以继续' : '创建一个新的管理员账号' }}</p>
+            <h2>欢迎回来</h2>
+            <p>请登录您的管理端账号以继续</p>
           </div>
 
           <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @keyup.enter="handleSubmit">
-            <template v-if="isLogin">
-              <el-form-item label="用户名 / 邮箱" prop="username">
-                <el-input v-model="form.username" placeholder="输入您的账号" :prefix-icon="User" />
-              </el-form-item>
-              <el-form-item label="密码" prop="password">
-                <el-input v-model="form.password" type="password" show-password placeholder="输入密码" :prefix-icon="Lock" />
-              </el-form-item>
-            </template>
-
-            <template v-else>
-              <el-form-item label="注册邮箱" prop="email">
-                <el-input v-model="form.email" placeholder="example@domain.com" :prefix-icon="Message" />
-              </el-form-item>
-              <el-form-item label="验证码" prop="verification">
-                <div class="code-row">
-                  <el-input v-model="form.verification" placeholder="验证码" :prefix-icon="Checked" />
-                  <el-button 
-                    @click="handleSendCode" 
-                    :disabled="isSending" 
-                    :loading="sending"
-                    class="send-code-btn"
-                  >
-                    {{ sendBtnText }}
-                  </el-button>
-                </div>
-              </el-form-item>
-              <el-form-item label="设置新密码" prop="newPassword">
-                <el-input v-model="form.newPassword" type="password" show-password placeholder="请设置登录密码" :prefix-icon="Lock" />
-              </el-form-item>
-            </template>
+            <el-form-item label="用户名 / 邮箱" prop="username">
+              <el-input v-model="form.username" placeholder="输入您的账号" :prefix-icon="User" />
+            </el-form-item>
+            <el-form-item label="密码" prop="password">
+              <el-input v-model="form.password" type="password" show-password placeholder="输入密码" :prefix-icon="Lock" />
+            </el-form-item>
 
             <div class="form-actions">
               <el-button type="primary" class="main-btn" :loading="loading" @click="handleSubmit">
-                {{ isLogin ? '立即进入' : '完成注册' }}
-              </el-button>
-              
-              <div class="divider">
-                <span>或者</span>
-              </div>
-
-              <el-button v-if="isLogin" type="default" class="preview-btn" @click="handlePreview">
-                快速预览体验
+                立即进入
               </el-button>
             </div>
           </el-form>
-
-          <div class="form-footer">
-            <span>{{ isLogin ? '还没有账号？' : '已经有账号？' }}</span>
-            <a @click="toggleMode" class="toggle-link">{{ isLogin ? '立即注册' : '返回登录' }}</a>
-          </div>
         </div>
       </div>
     </div>
@@ -73,82 +36,27 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { User, Lock, Message, Checked, TrendCharts } from '@element-plus/icons-vue';
-import { login, register, sendVerification } from '../api/auth';
+import { User, Lock, TrendCharts } from '@element-plus/icons-vue';
+import { login } from '../api/auth';
 import { useUserStore } from '../stores/user';
 
 const router = useRouter();
 const userStore = useUserStore();
 
-const isLogin = ref(true);
 const loading = ref(false);
-const sending = ref(false);
-const sendTimer = ref(null);
-const countdown = ref(0);
 
 const formRef = ref(null);
 const form = reactive({
   username: '',
-  password: '',
-  email: '',
-  verification: '',
-  newPassword: ''
+  password: ''
 });
 
-const rules = computed(() => {
-  if (isLogin.value) {
-    return {
-      username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
-      password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
-    };
-  } else {
-    return {
-      email: [
-        { required: true, message: '请输入邮箱', trigger: 'blur' },
-        { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
-      ],
-      verification: [{ required: true, message: '请输入验证码', trigger: 'blur' }],
-      newPassword: [{ required: true, message: '请设置密码', trigger: 'blur' }]
-    };
-  }
-});
-
-const isSending = computed(() => countdown.value > 0);
-const sendBtnText = computed(() => isSending.value ? `${countdown.value}s` : '发送验证码');
-
-const toggleMode = () => {
-  isLogin.value = !isLogin.value;
-  formRef.value?.resetFields();
-};
-
-const handleSendCode = async () => {
-  if (!form.email) {
-    ElMessage.warning('请先输入邮箱');
-    return;
-  }
-  formRef.value?.validateField('email', async (valid) => {
-    if (valid) {
-      try {
-        sending.value = true;
-        await sendVerification(form.email);
-        ElMessage.success('验证码发送成功');
-        countdown.value = 60;
-        sendTimer.value = setInterval(() => {
-          countdown.value--;
-          if (countdown.value <= 0) {
-            clearInterval(sendTimer.value);
-          }
-        }, 1000);
-      } catch (e) {
-        // request.js already throws and shows error
-      } finally {
-        sending.value = false;
-      }
-    }
-  });
+const rules = {
+  username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 };
 
 const handleSubmit = async () => {
@@ -157,20 +65,14 @@ const handleSubmit = async () => {
     if (valid) {
       loading.value = true;
       try {
-        if (isLogin.value) {
-          const res = await login({ username: form.username, password: form.password });
-          const token = res.data?.token || res.data; // assume token is inside data
-          if (token) {
-             userStore.setToken(typeof token === 'string' ? token : token.token);
-             ElMessage.success('登录成功');
-             router.push('/points-rule');
-          } else {
-             ElMessage.error('登录响应中未发现 Token');
-          }
+        const res = await login({ username: form.username, password: form.password });
+        const token = res.data?.token || res.data; // assume token is inside data
+        if (token) {
+           userStore.setToken(typeof token === 'string' ? token : token.token);
+           ElMessage.success('登录成功');
+           router.push('/points-rule');
         } else {
-          await register({ email: form.email, verification: form.verification, password: form.newPassword });
-          ElMessage.success('注册成功，请登录');
-          toggleMode();
+           ElMessage.error('登录响应中未发现 Token');
         }
       } catch (e) {
          // handled by request.js
@@ -179,13 +81,6 @@ const handleSubmit = async () => {
       }
     }
   });
-};
-
-// 临时预览函数
-const handlePreview = () => {
-  userStore.setToken('preview_token');
-  ElMessage.success('已进入预览模式');
-  router.push('/points-rule');
 };
 </script>
 
@@ -214,7 +109,7 @@ const handlePreview = () => {
 
 .login-left {
   flex: 1.1;
-  background-color: #1e293b;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -224,14 +119,25 @@ const handlePreview = () => {
   overflow: hidden;
 }
 
+.login-left::before {
+  content: "";
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
 .login-left::after {
   content: "";
   position: absolute;
-  top: -20%;
-  right: -20%;
+  bottom: -10%;
+  right: -10%;
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.15) 0%, transparent 70%);
   border-radius: 50%;
 }
 
@@ -296,103 +202,52 @@ const handlePreview = () => {
 }
 
 :deep(.el-input__wrapper) {
-  background-color: #f1f5f9;
+  background-color: #f8fafc;
   box-shadow: none !important;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  padding: 0 12px;
-  height: 44px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0 16px;
+  height: 48px;
   transition: all 0.3s;
 }
 
 :deep(.el-input__wrapper.is-focus) {
   background-color: #fff;
   border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
 }
 
 :deep(.el-input__prefix-icon) {
-  color: #94a3b8;
-}
-
-.code-row {
-  display: flex;
-  gap: 12px;
-  width: 100%;
-}
-
-.send-code-btn {
-  height: 44px !important;
-  border-radius: 10px !important;
-  min-width: 100px;
+  color: #64748b;
+  font-size: 18px;
 }
 
 .form-actions {
-  margin-top: 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  margin-top: 16px;
 }
 
 .main-btn {
+  width: 100%;
   height: 48px !important;
   border-radius: 12px !important;
   font-size: 16px !important;
   font-weight: 600 !important;
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3) !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+  transition: all 0.3s !important;
 }
 
-.preview-btn {
-  height: 48px !important;
-  border-radius: 12px !important;
-  font-weight: 500 !important;
-  border: 1px dashed #cbd5e1 !important;
-  color: #64748b !important;
-}
-
-.divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  margin: 4px 0;
-}
-
-.divider::before, .divider::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background-color: #e2e8f0;
-}
-
-.divider span {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-.form-footer {
-  margin-top: 32px;
-  text-align: center;
-  font-size: 14px;
-  color: #64748b;
-}
-
-.toggle-link {
-  color: #3b82f6;
-  font-weight: 600;
-  cursor: pointer;
-  margin-left: 4px;
-  text-decoration: none;
-  transition: opacity 0.2s;
-}
-
-.toggle-link:hover {
-  opacity: 0.8;
+.main-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4) !important;
 }
 
 @media (max-width: 768px) {
   .login-box {
     width: 400px;
     min-height: auto;
+    margin: 20px;
   }
   .login-left {
     display: none;

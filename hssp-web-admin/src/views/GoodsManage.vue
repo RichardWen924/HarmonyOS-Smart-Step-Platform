@@ -356,6 +356,7 @@ onMounted(() => {
   border-radius: 99px;
   transition: all 0.3s;
   cursor: pointer;
+  outline: none;
 }
 
 .user-profile:hover {
@@ -372,6 +373,12 @@ onMounted(() => {
   padding: 32px 40px;
   flex: 1;
   overflow-y: auto;
+}
+
+.pagination-wrapper {
+  margin-top: 32px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .table-card {
@@ -446,6 +453,20 @@ onMounted(() => {
   gap: 2px;
   font-size: 13px;
   padding: 2px 4px;
+  transition: all 0.2s;
+}
+
+.table-ops :deep(.el-button--primary:hover) {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.table-ops :deep(.el-button--danger:hover) {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.custom-table {
+  --el-table-border-color: #f1f5f9;
+  --el-table-header-bg-color: #f8fafc;
   border-radius: 4px;
 }
 
@@ -465,12 +486,19 @@ onMounted(() => {
 :deep(.el-dialog) {
   border-radius: 20px;
   overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 :deep(.el-dialog__header) {
+  margin-right: 0;
   padding: 24px 32px;
   background-color: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
+}
+
+:deep(.el-dialog__title) {
+  font-weight: 700;
+  color: #1e293b;
 }
 
 :deep(.el-dialog__body) {

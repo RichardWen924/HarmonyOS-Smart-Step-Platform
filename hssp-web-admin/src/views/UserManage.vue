@@ -87,12 +87,16 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="160" align="center" fixed="right">
+            <el-table-column label="操作" width="220" align="center" fixed="right">
               <template #default="{ row }">
                 <div class="table-ops">
                   <el-button link type="primary" @click="handleEdit(row)">
                     <el-icon><EditPen /></el-icon>
                     <span>编辑</span>
+                  </el-button>
+                  <el-button link type="warning" @click="handleResetPassword(row)">
+                    <el-icon><RefreshRight /></el-icon>
+                    <span>重置密码</span>
                   </el-button>
                   <el-button link type="danger" @click="handleDelete(row)">
                     <el-icon><Delete /></el-icon>
@@ -105,9 +109,12 @@
 
           <div class="pagination-wrapper">
             <el-pagination
-              layout="total, prev, pager, next"
+              v-model:current-page="pageParams.current"
+              v-model:page-size="pageParams.size"
+              :page-sizes="[10, 20, 50]"
+              layout="total, sizes, prev, pager, next"
               :total="total"
-              :page-size="10"
+              @size-change="handleSizeChange"
               @current-change="handleCurrentChange"
             />
           </div>
@@ -181,10 +188,10 @@
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useRouter } from 'vue-router';
-import { ArrowDown, Delete, EditPen } from '@element-plus/icons-vue';
+import { ArrowDown, Delete, EditPen, RefreshRight } from '@element-plus/icons-vue';
 import SideBar from '../components/SideBar.vue';
 import { useUserStore } from '../stores/user';
-import { getUserList, updateUser, deleteUsers } from '../api/user';
+import { getUserPage, updateUser, deleteUsers, resetPassword } from '../api/user';
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -194,6 +201,10 @@ const tableData = ref([]);
 const loading = ref(false);
 const total = ref(0);
 const selectedIds = ref([]);
+const pageParams = reactive({
+  current: 1,
+  size: 10
+});
 
 // Dialog
 const dialogVisible = ref(false);
@@ -232,10 +243,9 @@ const handleLogout = () => {
 const fetchList = async () => {
   loading.value = true;
   try {
-    const res = await getUserList();
-    // 假设后端返回的是数组或者包含 records 的对象
+    const res = await getUserPage(pageParams);
     tableData.value = res.data?.records || res.data || [];
-    total.value = tableData.value.length;
+    total.value = res.data?.total || tableData.value.length;
   } catch (error) {
     console.error(error);
   } finally {
@@ -247,9 +257,29 @@ const handleSelectionChange = (selection) => {
   selectedIds.value = selection.map(item => item.id);
 };
 
-const handleCurrentChange = (val) => {
-  // 目前暂无分页接口参数，前端模拟或待后端完善
+const handleSizeChange = (val) => {
+  pageParams.size = val;
   fetchList();
+};
+
+const handleCurrentChange = (val) => {
+  pageParams.current = val;
+  fetchList();
+};
+
+const handleResetPassword = (row) => {
+  ElMessageBox.confirm(`确定要重置用户 "${row.nickname || row.username}" 的密码为初始密码吗？`, '提示', {
+    confirmButtonText: '确定重置',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await resetPassword(row.id);
+      ElMessage.success('密码已重置');
+    } catch (error) {
+      console.error(error);
+    }
+  });
 };
 
 const handleEdit = (row) => {
@@ -353,6 +383,12 @@ onMounted(() => {
   padding: 32px 40px;
   flex: 1;
   overflow-y: auto;
+}
+
+.pagination-wrapper {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .table-card {
