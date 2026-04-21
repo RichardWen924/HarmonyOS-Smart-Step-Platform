@@ -39,9 +39,11 @@ public class MailServiceImpl implements MailService {
         message.setSubject("【XX系统】验证码校验");
         message.setText("您的验证码为：" + code + "，有效期 5 分钟。请勿泄露。");
 
+        System.out.println("sendCode: " + to);
+
         try {
             // 4. 发送邮件（这是一个耗时操作）TODO 发送到QQ邮箱
-//            mailSender.send(message);
+            mailSender.send(message);
 
         } catch (Exception e) {
             // 生产环境下必须捕获异常，防止邮件服务宕机导致业务崩溃
