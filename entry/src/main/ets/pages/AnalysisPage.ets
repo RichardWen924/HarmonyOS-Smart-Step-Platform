@@ -24,6 +24,7 @@ export struct AnalysisPage {
   @State isLoading: boolean = true
   @State chartData: number[] = []
   @State chartLabels: string[] = []
+  @State chartKey: number = 0 // 用于强制刷新图表
   @State currentTab: string = 'trend' // trend, statistics, comparison
 
   // 对比分析数据
@@ -102,8 +103,16 @@ export struct AnalysisPage {
           .borderRadius(AppBorderRadius.radius2Xl)
           .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg, top: AppSpacing.spaceSm, bottom: AppSpacing.spaceSm })
           .onClick(() => {
-            this.selectedPeriod = 7
-            this.loadStepStatistics()
+            if (this.selectedPeriod !== 7) {
+              // 先清空图表
+              this.chartData = []
+              this.chartLabels = []
+              this.selectedPeriod = 7
+              // 延迟加载，让UI先更新
+              setTimeout(() => {
+                this.loadStepStatistics()
+              }, 100)
+            }
           })
 
         Button('近30天')
@@ -113,8 +122,16 @@ export struct AnalysisPage {
           .borderRadius(AppBorderRadius.radius2Xl)
           .padding({ left: AppSpacing.spaceLg, right: AppSpacing.spaceLg, top: AppSpacing.spaceSm, bottom: AppSpacing.spaceSm })
           .onClick(() => {
-            this.selectedPeriod = 30
-            this.loadStepStatistics()
+            if (this.selectedPeriod !== 30) {
+              // 先清空图表
+              this.chartData = []
+              this.chartLabels = []
+              this.selectedPeriod = 30
+              // 延迟加载，让UI先更新
+              setTimeout(() => {
+                this.loadStepStatistics()
+              }, 100)
+            }
           })
       }
     }
@@ -262,8 +279,8 @@ export struct AnalysisPage {
       .width('100%')
       .margin({ bottom: AppSpacing.spaceLg })
 
-      // 使用曲线图组件
-      if (this.chartData.length > 0) {
+      // 使用曲线图组件 - 通过条件渲染强制重建
+      if (this.chartData.length > 0 && this.chartKey >= 0) {
         LineChart({
           data: this.chartData,
           labels: this.chartLabels,
@@ -272,7 +289,7 @@ export struct AnalysisPage {
           pointColor: AppColors.warningColor,
           gridColor: AppColors.borderColor
         })
-      } else {
+      } else if (this.chartData.length === 0) {
         Column() {
           Text('📊')
             .fontSize(48)
@@ -674,6 +691,7 @@ export struct AnalysisPage {
   }
 
   private async loadStepStatistics(): Promise<void> {
+    console.log('[AnalysisPage] 开始加载步数统计，周期:', this.selectedPeriod, '天')
     this.isLoading = true
 
     try {
@@ -682,6 +700,7 @@ export struct AnalysisPage {
 
       if (trendResponse.code === 1 && trendResponse.data) {
         const trendData = trendResponse.data as StepRecord[]
+        console.log('[AnalysisPage] 获取到', trendData.length, '条记录')
 
         // 设置步数记录
         this.stepRecords = trendData
@@ -703,6 +722,11 @@ export struct AnalysisPage {
 
         // 准备图表数据
         this.prepareChartData()
+        console.log('[AnalysisPage] 图表数据已准备，长度:', this.chartData.length)
+        
+        // 强制刷新图表（通过改变key）
+        this.chartKey++
+        console.log('[AnalysisPage] 图表key已更新为:', this.chartKey)
 
         // 计算对比分析指标
         await this.calculateComparisonMetrics()

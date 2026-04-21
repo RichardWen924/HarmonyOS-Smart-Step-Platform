@@ -3,8 +3,8 @@ import { AppColors, AppFonts, AppSpacing } from '../config/DesignSystem'
 // 曲线图组件
 @Component
 export struct LineChart {
-  @Prop data: number[] = []
-  @Prop labels: string[] = []
+  @Link data: number[]
+  @Link labels: string[]
   @Prop chartHeight: number = 200
   @Prop lineColor: Color = AppColors.primaryColor
   @Prop pointColor: Color = AppColors.warningColor
@@ -20,6 +20,7 @@ export struct LineChart {
         .height(this.chartHeight)
         .backgroundColor(Color.Transparent)
         .onReady(() => {
+          console.log('[LineChart] Canvas onReady, 数据长度:', this.data.length)
           this.drawChart()
         })
     }
