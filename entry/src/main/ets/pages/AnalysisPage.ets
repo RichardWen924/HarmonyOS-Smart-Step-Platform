@@ -642,25 +642,22 @@ export struct AnalysisPage {
       const currentSteps = this.stateStore.todaySteps
       console.log('AnalysisPage: 准备上传步数:', currentSteps)
 
-      if (currentSteps > 0) {
-        const response = await this.apiClient.uploadSteps(
-          currentSteps,
-          new Date().toISOString().split('T')[0]
-        )
+      // 即使步数为0也要上传，以同步最新的步数状态
+      const response = await this.apiClient.uploadSteps(
+        currentSteps,
+        new Date().toISOString().split('T')[0]
+      )
 
-        if (response.code === 1) {
-          console.log('AnalysisPage: 步数上传成功，已更新Redis')
-        } else {
-          console.warn('AnalysisPage: 步数上传失败:', response.message)
-          
-          // 检查是否是认证失败
-          if (response.code === 401 || response.message?.includes('Authentication')) {
-            console.warn('AnalysisPage: 步数上传时认证失败')
-            // 不在这里跳转，由loadStepStatistics统一处理
-          }
-        }
+      if (response.code === 1) {
+        console.log('AnalysisPage: 步数上传成功，已更新Redis，步数:', currentSteps)
       } else {
-        console.log('AnalysisPage: 今日步数为0，跳过上传')
+        console.warn('AnalysisPage: 步数上传失败:', response.message)
+        
+        // 检查是否是认证失败
+        if (response.code === 401 || response.message?.includes('Authentication')) {
+          console.warn('AnalysisPage: 步数上传时认证失败')
+          // 不在这里跳转，由loadStepStatistics统一处理
+        }
       }
     } catch (error) {
       console.error('AnalysisPage: 上传步数异常:', error)

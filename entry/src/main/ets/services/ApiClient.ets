@@ -578,11 +578,18 @@ class ApiClientImpl {
 
   /**
    * 获取排行榜
+   * @param type 排行榜类型：daily | weekly | monthly
+   * @param pageNum 页码，默认1
+   * @param pageSize 每页数量，默认100
    */
-  async getRankingList(type: 'daily' | 'weekly' | 'monthly'): Promise<ApiResponse<RankingItem[]>> {
+  async getRankingList(
+    type: 'daily' | 'weekly' | 'monthly',
+    pageNum: number = 1,
+    pageSize: number = 100
+  ): Promise<ApiResponse<RankingItem[]>> {
     // 后端路径是 /user/rankings,参数是 periodType, 不是 /ranking/{type}
     const periodType = type === 'daily' ? 'day' : type === 'weekly' ? 'week' : 'month'
-    const endpoint = `/user/rankings?periodType=${periodType}&pageNum=1&pageSize=100`
+    const endpoint = `/user/rankings?periodType=${periodType}&pageNum=${pageNum}&pageSize=${pageSize}`
 
     const options: http.HttpRequestOptions = {
       method: http.RequestMethod.GET

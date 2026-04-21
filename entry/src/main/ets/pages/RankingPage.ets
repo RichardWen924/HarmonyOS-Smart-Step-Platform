@@ -1,4 +1,4 @@
-﻿import promptAction from '@ohos.promptAction'
+import promptAction from '@ohos.promptAction'
 import ApiClient from '../services/ApiClient'
 import StateStore from '../services/StateStore'
 import { RankingItem, PageData, UserInfo } from '../types/common'
@@ -61,13 +61,22 @@ export struct RankingPage {
       // 我的排名
       this.buildMyRanking()
 
-      // 排行榜列表
-      this.buildRankingList()
+      // 可滚动的内容区域
+      Scroll() {
+        Column() {
+          // 排行榜列表
+          this.buildRankingList()
 
-      // 加载更多
-      if (this.rankings.length < this.total) {
-        this.buildLoadMore()
+          // 加载更多
+          if (this.rankings.length < this.total) {
+            this.buildLoadMore()
+          }
+        }
+        .width('100%')
       }
+      .layoutWeight(1)
+      .scrollable(ScrollDirection.Vertical)
+      .edgeEffect(EdgeEffect.Spring)
     }
     .width('100%')
     .height('100%')
@@ -411,19 +420,16 @@ export struct RankingPage {
       const currentSteps = this.stateStore.todaySteps
       console.log('RankingPage: 准备上传步数:', currentSteps)
 
-      if (currentSteps > 0) {
-        const response = await this.apiClient.uploadSteps(
-          currentSteps,
-          new Date().toISOString().split('T')[0]
-        )
+      // 即使步数为0也要上传，以同步最新的步数状态
+      const response = await this.apiClient.uploadSteps(
+        currentSteps,
+        new Date().toISOString().split('T')[0]
+      )
 
-        if (response.code === 1) {
-          console.log('RankingPage: 步数上传成功，已更新Redis')
-        } else {
-          console.warn('RankingPage: 步数上传失败:', response.message)
-        }
+      if (response.code === 1) {
+        console.log('RankingPage: 步数上传成功，已更新Redis，步数:', currentSteps)
       } else {
-        console.log('RankingPage: 今日步数为0，跳过上传')
+        console.warn('RankingPage: 步数上传失败:', response.message)
       }
     } catch (error) {
       console.error('RankingPage: 上传步数异常:', error)
@@ -437,7 +443,9 @@ export struct RankingPage {
 
     try {
       const response = await this.apiClient.getRankingList(
-        this.currentPeriod
+        this.currentPeriod,
+        this.currentPage,
+        this.pageSize
       )
 
       if (response.code === 1 && response.data) {
@@ -529,7 +537,9 @@ export struct RankingPage {
 
     try {
       const response = await this.apiClient.getRankingList(
-        this.currentPeriod
+        this.currentPeriod,
+        this.currentPage,
+        this.pageSize
       )
 
       if (response.code === 1 && response.data) {

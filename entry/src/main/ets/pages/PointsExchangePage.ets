@@ -508,8 +508,13 @@ export struct PointsExchangePage {
       console.log('PointsExchangePage: 兑换结果:', JSON.stringify(result))
       
       if (result.code === 1) {
+        const returnedSteps = result.data.returnedSteps || 0
+        let message = `兑换成功！获得 ${result.data.gainedPoints?.toLocaleString()} 积分`
+        if (returnedSteps > 0) {
+          message += `，返还 ${returnedSteps.toLocaleString()} 步`
+        }
         promptAction.showToast({
-          message: `兑换成功！获得 ${result.data.gainedPoints?.toLocaleString()} 积分`,
+          message: message,
           duration: 2000
         })
         
@@ -627,8 +632,13 @@ export struct PointsExchangePage {
         console.log('PointsExchangePage: result.data:', JSON.stringify(result.data))
 
         if (result.code === 1) {
+          const returnedSteps = result.data.returnedSteps || 0
+          let message = `兑换成功！获得 ${result.data.gainedPoints?.toLocaleString()} 积分`
+          if (returnedSteps > 0) {
+            message += `，返还 ${returnedSteps.toLocaleString()} 步`
+          }
           promptAction.showToast({
-            message: `兑换成功！获得 ${result.data.gainedPoints?.toLocaleString()} 积分`,
+            message: message,
             duration: 2000
           })
 

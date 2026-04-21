@@ -134,7 +134,9 @@ export interface ExchangeRequest {
 
 // 积分兑换响应
 export interface ExchangeResponse {
-  exchangedSteps: number;
+  inputSteps: number; // 用户输入的步数
+  exchangedSteps: number; // 实际使用的步数
+  returnedSteps: number; // 返还的步数
   gainedPoints: number;
   remainingSteps: number;
   totalPoints: number;
