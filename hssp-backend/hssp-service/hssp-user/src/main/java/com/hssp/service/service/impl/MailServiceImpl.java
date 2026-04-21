@@ -51,9 +51,11 @@ public class MailServiceImpl implements MailService {
         message.setSubject("【XX系统】验证码校验");
         message.setText("您的验证码为：" + code + "，有效期 5 分钟。请勿泄露。");
 
+        log.info("发送到：{}", to);
+
         try {
             // 4. 发送邮件（这是一个耗时操作）TODO 发送到QQ邮箱
-//            mailSender.send(message);
+            mailSender.send(message);
             log.info("sendCode: {}", code);
 
         } catch (Exception e) {
