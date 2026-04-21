@@ -117,6 +117,7 @@ public class PointsController {
             Long userId = UserContext.getUserId();
             
             int earnedPoints = 0;
+            int actualUsedSteps = 0; // 实际使用的步数
             
             // 如果指定了规则ID，使用指定规则
             if (dto.getRuleId() != null) {
@@ -132,9 +133,10 @@ public class PointsController {
                 }
                 
                 earnedPoints = exchangeCount * selectedRule.getPointsAwarded();
+                actualUsedSteps = exchangeCount * selectedRule.getStepsRequired(); // 实际使用的步数
                 
-                log.info("用户 {} 使用指定规则 [{}] 兑换步数: {}, 兑换次数: {}, 获得积分: {}", 
-                    userId, selectedRule.getRuleName(), dto.getSteps(), exchangeCount, earnedPoints);
+                log.info("用户 {} 使用指定规则 [{}] 兑换 - 输入步数: {}, 实际使用: {}, 兑换次数: {}, 获得积分: {}, 返还步数: {}", 
+                    userId, selectedRule.getRuleName(), dto.getSteps(), actualUsedSteps, exchangeCount, earnedPoints, dto.getSteps() - actualUsedSteps);
             } else {
                 // 未指定规则，使用最优组合
                 List<PointRules> activeRules = pointRulesMapper.selectList(
@@ -145,6 +147,7 @@ public class PointsController {
                 
                 if (activeRules == null || activeRules.isEmpty()) {
                     earnedPoints = dto.getSteps() / 1000;
+                    actualUsedSteps = earnedPoints * 1000; // 实际使用的步数
                 } else {
                     int remainingSteps = dto.getSteps();
                     for (PointRules rule : activeRules) {
@@ -155,6 +158,7 @@ public class PointsController {
                         earnedPoints += exchangeCount * rule.getPointsAwarded();
                         remainingSteps -= exchangeCount * rule.getStepsRequired();
                     }
+                    actualUsedSteps = dto.getSteps() - remainingSteps; // 实际使用的步数
                 }
             }
             
@@ -162,14 +166,16 @@ public class PointsController {
                 return Result.error("步数不足，无法兑换积分");
             }
             
-            // 执行兑换（使用已计算的积分）
-            userPointsService.exchangePointsWithCalculatedPoints(dto.getSteps(), earnedPoints, userId);
+            // 执行兑换（使用实际使用的步数，多余的步数会自动保留）
+            userPointsService.exchangePointsWithCalculatedPoints(actualUsedSteps, earnedPoints, userId);
             
             // 查询兑换后的用户信息
             com.hssp.model.user.po.User user = userPointsService.getUserById(userId);
             
             java.util.Map<String, Object> result = new java.util.HashMap<>();
-            result.put("exchangedSteps", dto.getSteps());
+            result.put("inputSteps", dto.getSteps()); // 用户输入的步数
+            result.put("exchangedSteps", actualUsedSteps); // 实际使用的步数
+            result.put("returnedSteps", dto.getSteps() - actualUsedSteps); // 返还的步数
             result.put("gainedPoints", earnedPoints);
             result.put("remainingSteps", user != null ? user.getRemainingStep() : 0);
             result.put("totalPoints", user != null ? user.getTotalPoints() : 0);  // 使用 User 表的 totalPoints
