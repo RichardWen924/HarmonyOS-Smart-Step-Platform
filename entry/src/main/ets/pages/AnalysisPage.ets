@@ -31,6 +31,7 @@ export struct AnalysisPage {
   @State monthlyRanking: number = 0 // 本月排名
   @State progressSpeed: string = '' // 进步速度描述
   @State achievementRate: number = 0 // 达标率（%）
+  @State consecutiveDays: number = 0 // 连续打卡天数
 
   private apiClient = ApiClient
   private stateStore = StateStore
@@ -484,30 +485,8 @@ export struct AnalysisPage {
 
   @Builder buildComparisonCards() {
     Column() {
-      // 对比分析
+      // 对比分析 - 只保留本月排名和达标率
       Row() {
-        Column() {
-          Text('📊')
-            .fontSize(32)
-            .margin({ bottom: AppSpacing.spaceSm })
-
-          Text('本周 vs 上周')
-            .fontSize(AppFonts.fontSizeBase)
-            .fontColor(AppColors.textColor)
-            .fontWeight(AppFonts.fontWeightBold)
-            .margin({ bottom: AppSpacing.spaceXs })
-
-          Text(this.getWeeklyComparisonText())
-            .fontSize(AppFonts.fontSizeXl)
-            .fontColor(this.getWeeklyComparisonColor())
-            .fontWeight(AppFonts.fontWeightBold)
-        }
-        .layoutWeight(1)
-        .padding(AppSpacing.spaceLg)
-        .backgroundColor(AppColors.sportGreen)
-        .borderRadius(AppBorderRadius.radiusLg)
-        .shadow(AppShadows.shadowBase)
-
         Column() {
           Text('🏅')
             .fontSize(32)
@@ -521,12 +500,34 @@ export struct AnalysisPage {
 
           Text(this.getMonthlyRankingText())
             .fontSize(AppFonts.fontSizeXl)
-            .fontColor(AppColors.warningColor)
+            .fontColor(Color.White)
             .fontWeight(AppFonts.fontWeightBold)
         }
         .layoutWeight(1)
         .padding(AppSpacing.spaceLg)
         .backgroundColor(AppColors.sportOrange)
+        .borderRadius(AppBorderRadius.radiusLg)
+        .shadow(AppShadows.shadowBase)
+
+        Column() {
+          Text('🎯')
+            .fontSize(32)
+            .margin({ bottom: AppSpacing.spaceSm })
+
+          Text('达标率')
+            .fontSize(AppFonts.fontSizeBase)
+            .fontColor(AppColors.textColor)
+            .fontWeight(AppFonts.fontWeightBold)
+            .margin({ bottom: AppSpacing.spaceXs })
+
+          Text(`${this.getAchievementRate()}%`)
+            .fontSize(AppFonts.fontSizeXl)
+            .fontColor(Color.White)
+            .fontWeight(AppFonts.fontWeightBold)
+        }
+        .layoutWeight(1)
+        .padding(AppSpacing.spaceLg)
+        .backgroundColor(AppColors.sportBlue)
         .borderRadius(AppBorderRadius.radiusLg)
         .shadow(AppShadows.shadowBase)
         .margin({ left: AppSpacing.spaceLg })
@@ -559,24 +560,24 @@ export struct AnalysisPage {
         .shadow(AppShadows.shadowBase)
 
         Column() {
-          Text('🎯')
+          Text('🔥')
             .fontSize(32)
             .margin({ bottom: AppSpacing.spaceSm })
 
-          Text('达标率')
+          Text('连续打卡')
             .fontSize(AppFonts.fontSizeBase)
             .fontColor(AppColors.textColor)
             .fontWeight(AppFonts.fontWeightBold)
             .margin({ bottom: AppSpacing.spaceXs })
 
-          Text(`${this.getAchievementRate()}%`)
+          Text(`${this.getConsecutiveDays()}天`)
             .fontSize(AppFonts.fontSizeXl)
-            .fontColor(AppColors.primaryColor)
+            .fontColor(AppColors.sportOrange)
             .fontWeight(AppFonts.fontWeightBold)
         }
         .layoutWeight(1)
         .padding(AppSpacing.spaceLg)
-        .backgroundColor(AppColors.sportBlue)
+        .backgroundColor(AppColors.bgCard)
         .borderRadius(AppBorderRadius.radiusLg)
         .shadow(AppShadows.shadowBase)
         .margin({ left: AppSpacing.spaceLg })
@@ -868,14 +869,64 @@ export struct AnalysisPage {
     this.calculateAchievementRate()
     console.log('达标率:', this.achievementRate, '%')
 
+    // 计算连续打卡天数
+    this.calculateConsecutiveDays()
+    console.log('连续打卡天数:', this.consecutiveDays)
+
     console.log('=== 对比分析指标计算完成 ===')
   }
 
   // 计算本周vs上周增长率
-  private calculateWeeklyComparison(): void {
+  private async calculateWeeklyComparison(): Promise<void> {
     console.log('[对比分析] 计算本周vs上周，数据量:', this.stepRecords.length)
+    
+    // 如果当前数据不足14天，尝试从更长的周期获取数据
     if (this.stepRecords.length < 14) {
-      console.log('[对比分析] 数据不足14天，无法计算')
+      console.log('[对比分析] 当前数据不足14天（仅有', this.stepRecords.length, '天），尝试加载30天数据')
+      
+      try {
+        // 临时保存当前选择的周期
+        const originalPeriod = this.selectedPeriod
+        
+        // 请求30天的数据以获取足够的历史记录
+        const response = await this.apiClient.getStepTrend(30)
+        
+        if (response.code === 1 && response.data) {
+          const allRecords = response.data as StepRecord[]
+          console.log('[对比分析] 成功获取30天数据，共', allRecords.length, '条记录')
+          
+          if (allRecords.length >= 14) {
+            // 使用30天数据进行计算，但不更新UI显示的stepRecords
+            const sortedRecords = [...allRecords].sort((a, b) =>
+              new Date(a.date).getTime() - new Date(b.date).getTime()
+            )
+            
+            // 最近7天（本周）
+            const thisWeekSteps = sortedRecords.slice(-7).reduce((sum, r) => sum + r.steps, 0)
+            // 前7天（上周）
+            const lastWeekSteps = sortedRecords.slice(-14, -7).reduce((sum, r) => sum + r.steps, 0)
+            
+            console.log('[对比分析] 本周步数:', thisWeekSteps, '上周步数:', lastWeekSteps)
+            
+            if (lastWeekSteps === 0) {
+              console.log('[对比分析] 上周步数为0，无法计算增长率')
+              this.weeklyComparison = 0
+              return
+            }
+            
+            this.weeklyComparison = ((thisWeekSteps - lastWeekSteps) / lastWeekSteps) * 100
+            console.log('[对比分析] 增长率:', this.weeklyComparison, '%')
+            return
+          } else {
+            console.log('[对比分析] 即使加载30天数据也不足14天（仅有', allRecords.length, '天）')
+          }
+        }
+      } catch (error) {
+        console.error('[对比分析] 加载30天数据失败:', error)
+      }
+      
+      // 如果获取失败或数据仍不足，显示数据不足
+      console.log('[对比分析] 显示数据不足')
       this.weeklyComparison = 0
       return
     }
@@ -1041,5 +1092,63 @@ export struct AnalysisPage {
   private getAchievementRate(): number {
     console.log('[UI渲染] getAchievementRate 返回:', this.achievementRate)
     return this.achievementRate
+  }
+
+  // 计算连续打卡天数
+  private calculateConsecutiveDays(): void {
+    console.log('[对比分析] 计算连续打卡天数，数据量:', this.stepRecords.length)
+    if (this.stepRecords.length === 0) {
+      this.consecutiveDays = 0
+      return
+    }
+
+    // 按日期降序排序
+    const sortedRecords = [...this.stepRecords]
+      .filter(r => r.steps > 0) // 只统计有步数的记录
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+    if (sortedRecords.length === 0) {
+      this.consecutiveDays = 0
+      return
+    }
+
+    // 检查今天是否有记录
+    const today = new Date().toISOString().split('T')[0]
+    const hasToday = sortedRecords.some(r => r.date === today)
+    
+    if (!hasToday) {
+      // 如果今天没有记录，从昨天开始计算
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterdayStr = yesterday.toISOString().split('T')[0]
+      
+      if (sortedRecords[0].date !== yesterdayStr) {
+        this.consecutiveDays = 0
+        return
+      }
+    }
+
+    // 计算连续天数
+    let consecutive = 1
+    for (let i = 0; i < sortedRecords.length - 1; i++) {
+      const currentDate = new Date(sortedRecords[i].date)
+      const nextDate = new Date(sortedRecords[i + 1].date)
+      
+      const diffDays = Math.floor((currentDate.getTime() - nextDate.getTime()) / (1000 * 60 * 60 * 24))
+      
+      if (diffDays === 1) {
+        consecutive++
+      } else {
+        break
+      }
+    }
+
+    this.consecutiveDays = consecutive
+    console.log('[对比分析] 连续打卡天数:', this.consecutiveDays)
+  }
+
+  // 获取连续打卡天数
+  private getConsecutiveDays(): number {
+    return this.consecutiveDays
   }
 }
