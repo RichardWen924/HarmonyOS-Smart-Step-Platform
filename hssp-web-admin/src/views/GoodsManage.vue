@@ -73,6 +73,12 @@
               </template>
             </el-table-column>
 
+            <el-table-column prop="stock" label="库存数量" width="120" align="center">
+              <template #default="{ row }">
+                <span class="numeric-text">{{ row.stock }}</span>
+              </template>
+            </el-table-column>
+
             <el-table-column prop="displayNum" label="排序权重" width="120" align="center">
               <template #default="{ row }">
                 <span class="numeric-text">{{ row.displayNum }}</span>
@@ -149,6 +155,14 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
+            <el-form-item label="库存数量" prop="stock">
+              <el-input-number v-model="form.stock" :min="0" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="24">
             <el-form-item label="排序权重" prop="displayNum">
               <el-input-number v-model="form.displayNum" :min="0" style="width: 100%" />
             </el-form-item>
@@ -197,6 +211,7 @@ const form = reactive({
   id: null,
   goodsName: '',
   requiredPoints: 0,
+  stock: 0,
   coverUrl: '',
   displayNum: 0,
   isDeleted: 0
@@ -205,6 +220,7 @@ const form = reactive({
 const rules = {
   goodsName: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
   requiredPoints: [{ required: true, message: '请输入所需积分', trigger: 'blur' }],
+  stock: [{ required: true, message: '请输入库存数量', trigger: 'blur' }],
   coverUrl: [{ required: true, message: '请输入封面图地址', trigger: 'blur' }]
 };
 
@@ -254,6 +270,7 @@ const handleAdd = () => {
     id: null,
     goodsName: '',
     requiredPoints: 0,
+    stock: 0,
     coverUrl: '',
     displayNum: 0,
     isDeleted: 0
