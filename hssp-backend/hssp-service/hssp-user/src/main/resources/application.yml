@@ -5,8 +5,6 @@ server:
 spring:
   application:
     name: hssp-user
-  profiles:
-    active: dev
   datasource:
     url: jdbc:mysql://${hssp.db.host}:3306/step_counter_db
     driver-class-name: com.mysql.cj.jdbc.Driver

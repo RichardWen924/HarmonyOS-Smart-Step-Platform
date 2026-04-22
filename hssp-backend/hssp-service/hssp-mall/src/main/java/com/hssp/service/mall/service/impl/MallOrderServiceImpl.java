@@ -144,26 +144,4 @@ public class MallOrderServiceImpl extends ServiceImpl<MallOrderMapper, MallOrder
         }
         baseMapper.updateById(order);
     }
-
-    @Override
-    public List<MallOrder> listUserOrders(Long userId) {
-        return baseMapper.selectList(new LambdaQueryWrapper<MallOrder>()
-                .eq(MallOrder::getUserId, userId)
-                .orderByDesc(MallOrder::getExchangeTime));
-    }
-
-    @Override
-    public void updateOrderStatus(OrderStatusUpdateDto dto) {
-        MallOrder order = baseMapper.selectById(dto.getOrderId());
-        if (order == null) {
-            throw new RuntimeException("订单不存在");
-        }
-        if (dto.getStatus() != null) {
-            order.setStatus(dto.getStatus());
-        }
-        if (dto.getTrackingNumber() != null) {
-            order.setTrackingNumber(dto.getTrackingNumber());
-        }
-        baseMapper.updateById(order);
-    }
 }

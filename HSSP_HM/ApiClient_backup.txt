@@ -1,0 +1,718 @@
+﻿import http from '@ohos.net.http'
+import AppConfig from '../config/AppConfig'
+import {
+  ApiResponse,
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  VerificationRequest,
+  UserInfo,
+  StepRecord,
+  StepStatistics,
+  RankingItem,
+  ExchangeRequest,
+  ExchangeResponse,
+  ExchangeRecord,
+  PointRule,
+  ExchangePreview
+} from '../types/common'
+
+// 绉垎鍝嶅簲鎺ュ彛
+interface PointsResponse {
+  totalPoints: number
+}
+
+/**
+ * API 瀹㈡埛绔湇鍔＄被
+ * 璐熻矗涓庡悗绔?API 杩涜閫氫俊
+ */
+class ApiClientImpl {
+  private static instance: ApiClientImpl
+  private baseUrl: string = AppConfig.baseUrl
+  private timeout: number = AppConfig.timeout
+  private maxRetries: number = AppConfig.maxRetries
+  private retryDelay: number = AppConfig.retryDelay
+  public enableMock: boolean = AppConfig.enableMock
+  public enableLog: boolean = AppConfig.enableLog
+
+  // JWT Token 瀛樺偍
+  private jwtToken: string = ''
+
+  /**
+   * 鑾峰彇 ApiClient 瀹炰緥锛堝崟渚嬫ā寮忥級
+   */
+  public static getInstance(): ApiClientImpl {
+    if (!ApiClientImpl.instance) {
+      ApiClientImpl.instance = new ApiClientImpl()
+    }
+    return ApiClientImpl.instance
+  }
+
+  /**
+   * 璁剧疆 JWT Token
+   */
+  public setToken(token: string): void {
+    this.jwtToken = token
+  }
+
+  /**
+   * 鑾峰彇褰撳墠 Token
+   */
+  public getToken(): string {
+    return this.jwtToken
+  }
+
+  /**
+   * 娓呴櫎 Token
+   */
+  public clearToken(): void {
+    this.jwtToken = ''
+  }
+
+  /**
+   * 鍙戦€?HTTP 璇锋眰鐨勯€氱敤鏂规硶
+   */
+  private async request<T>(endpoint: string, options: http.HttpRequestOptions, retryCount: number = 0): Promise<ApiResponse<T>> {
+    // 绂佺敤Mock鏁版嵁锛屽缁堜娇鐢ㄧ湡瀹炲悗绔疉PI
+    if (false) {
+      // Mock鏁版嵁鍔熻兘宸茬鐢?
+      return this.getMockResponse<T>(endpoint)
+    }
+
+    const httpRequest = http.createHttp()
+    const url = `${this.baseUrl}${endpoint}`
+
+    try {
+      // 璁剧疆璇锋眰澶?
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      }
+
+      // 濡傛灉瀛樺湪 JWT Token,娣诲姞鍒?Authorization 澶?
+      console.log('=== Token Debug Info ===')
+      console.log('jwtToken exists:', !!this.jwtToken)
+      console.log('jwtToken value:', this.jwtToken ? this.jwtToken.substring(0, 20) + '...' : 'null')
+      console.log('jwtToken length:', this.jwtToken?.length || 0)
+
+      if (this.jwtToken) {
+        headers['Authorization'] = `Bearer ${this.jwtToken}`
+        console.log('Authorization header set:', headers['Authorization'].substring(0, 30) + '...')
+      } else {
+        console.warn('鈿狅笍 WARNING: No token available! Request will fail authentication!')
+      }
+      console.log('========================')
+
+      const requestOptions: http.HttpRequestOptions = {
+        method: options.method,
+        header: headers,
+        extraData: options.extraData,
+        readTimeout: this.timeout,
+        connectTimeout: this.timeout
+      }
+
+      console.log(`Sending ${options.method} request to: ${url}`)
+
+      const response = await httpRequest.request(url, requestOptions)
+
+      if (response.responseCode === 200) {
+        try {
+          const result = JSON.parse(response.result as string) as ApiResponse<T>
+          console.log(`API Response for ${endpoint}:`, result)
+          return result
+        } catch (parseError) {
+          console.error('Failed to parse response:', parseError)
+          throw new Error('Invalid response format')
+        }
+      } else if (response.responseCode === 401) {
+        // Token 杩囨湡鎴栨棤鏁?
+        this.clearToken()
+        throw new Error('Authentication failed')
+      } else if (response.responseCode >= 500 && retryCount < this.maxRetries) {
+        // 鏈嶅姟鍣ㄩ敊璇紝閲嶈瘯
+        console.log(`Retrying request (${retryCount + 1}/${this.maxRetries})...`)
+        await this.delay(this.retryDelay)
+        return this.request<T>(endpoint, options, retryCount + 1)
+      } else {
+        throw new Error(`HTTP ${response.responseCode}: ${response.result}`)
+      }
+    } catch (error) {
+      console.error(`Request failed for ${url}:`, error)
+
+      // 缃戠粶閿欒锛岄噸璇?
+      if (retryCount < this.maxRetries) {
+        console.log(`Retrying request due to network error (${retryCount + 1}/${this.maxRetries})...`)
+        await this.delay(this.retryDelay)
+        return this.request<T>(endpoint, options, retryCount + 1)
+      }
+
+      if (error instanceof Error) {
+        throw error
+      } else {
+        throw new Error(String(error))
+      }
+    } finally {
+      httpRequest.destroy()
+    }
+  }
+
+  /**
+   * 寤惰繜鍑芥暟
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  /**
+   * 鍒涘缓閿欒鍝嶅簲锛堥伩鍏嶄娇鐢╱nknown绫诲瀷锛?
+   */
+  private createErrorResponse<T>(code: number, message: string): ApiResponse<T> {
+    const errorResponse: ApiResponse<T> = {
+      code: code,
+      message: message,
+      data: undefined as T
+    }
+    return errorResponse
+  }
+
+  /**
+   * 瀵嗙爜鐧诲綍
+   */
+  async loginByPassword(account: string, password: string): Promise<ApiResponse<LoginResponse>> {
+    // 鍒ゆ柇鏄敤鎴峰悕杩樻槸閭锛氬寘鍚獲绗﹀彿鐨勬槸閭锛屽惁鍒欐槸鐢ㄦ埛鍚?
+    const isEmail = account.includes('@')
+    const requestData: LoginRequest = {
+      password: password
+    }
+
+    // 鏍规嵁璐﹀彿绫诲瀷璁剧疆瀵瑰簲鐨勫瓧娈?
+    if (isEmail) {
+      requestData.email = account
+    } else {
+      requestData.username = account
+    }
+
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      extraData: JSON.stringify(requestData)
+    }
+
+    const response = await this.request<string>('/user/login', options)
+
+    // 鍚庣杩斿洖鐨刣ata鏄洿鎺oken瀛楃涓?涓嶆槸瀵硅薄
+    console.log('=== Login Response Debug ===')
+    console.log('response.code:', response.code)
+    console.log('response.message:', response.message)
+    console.log('typeof response.data:', typeof response.data)
+    console.log('response.data value:', response.data ? (typeof response.data === 'string' ? response.data.substring(0, 30) + '...' : JSON.stringify(response.data)) : 'null')
+
+    // 濡傛灉鐧诲綍鎴愬姛,淇濆瓨 Token (鍚庣鐩存帴杩斿洖token瀛楃涓?
+    if (response.code === 1 && response.data && typeof response.data === 'string') {
+      console.log('鉁?Saving token to ApiClient...')
+      this.setToken(response.data)
+      console.log('鉁?Token saved! Current token length:', this.jwtToken.length)
+    } else {
+      console.error('鉂?Login failed or no token in response!')
+      console.error('response.data type:', typeof response.data)
+      console.error('response.data value:', response.data)
+    }
+    console.log('===========================')
+
+    // 涓轰簡鍏煎鍓嶇鍏朵粬浠ｇ爜,灏嗗瓧绗︿覆token鍖呰鎴怢oginResponse瀵硅薄
+    const loginResponse: ApiResponse<LoginResponse> = {
+      code: response.code,
+      message: response.message,
+      data: new LoginResponse(response.data || '', {} as UserInfo, 7200)
+    }
+
+    return loginResponse
+  }
+
+  /**
+   * 楠岃瘉鐮佺櫥褰?
+   */
+  async loginByCode(account: string, code: string): Promise<ApiResponse<LoginResponse>> {
+    // 鍒ゆ柇鏄敤鎴峰悕杩樻槸閭锛氬寘鍚獲绗﹀彿鐨勬槸閭锛屽惁鍒欐槸鐢ㄦ埛鍚?
+    const isEmail = account.includes('@')
+    const requestData: LoginRequest = {
+      verification: code
+    }
+
+    // 鏍规嵁璐﹀彿绫诲瀷璁剧疆瀵瑰簲鐨勫瓧娈?
+    if (isEmail) {
+      requestData.email = account
+    } else {
+      requestData.username = account
+    }
+
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      extraData: JSON.stringify(requestData)
+    }
+
+    const response = await this.request<string>('/user/login-by-code', options)
+
+    // 鍚庣杩斿洖鐨刣ata鏄洿鎺oken瀛楃涓?涓嶆槸瀵硅薄
+    console.log('=== Login By Code Response Debug ===')
+    console.log('response.code:', response.code)
+    console.log('typeof response.data:', typeof response.data)
+
+    // 濡傛灉鐧诲綍鎴愬姛,淇濆瓨 Token (鍚庣鐩存帴杩斿洖token瀛楃涓?
+    if (response.code === 1 && response.data && typeof response.data === 'string') {
+      console.log('鉁?Saving token to ApiClient...')
+      this.setToken(response.data)
+      console.log('鉁?Token saved! Current token length:', this.jwtToken.length)
+    } else {
+      console.error('鉂?Login failed or no token in response!')
+    }
+    console.log('=====================================')
+
+    // 涓轰簡鍏煎鍓嶇鍏朵粬浠ｇ爜,灏嗗瓧绗︿覆token鍖呰鎴怢oginResponse瀵硅薄
+    const loginResponse: ApiResponse<LoginResponse> = {
+      code: response.code,
+      message: response.message,
+      data: new LoginResponse(response.data || '', {} as UserInfo, 7200)
+    }
+
+    return loginResponse
+  }
+
+  /**
+   * 鐢ㄦ埛娉ㄥ唽
+   */
+  async register(email: string, code: string): Promise<ApiResponse<void>> {
+    const requestData: RegisterRequest = {
+      email: email,
+      verification: code
+    }
+
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      extraData: JSON.stringify(requestData)
+    }
+
+    const response = await this.request<void>('/user/register', options)
+
+    // 娉ㄥ唽鎺ュ彛鍚庣鍙繑鍥瀞uccess娑堟伅,涓嶈繑鍥瀟oken
+    // 娉ㄥ唽鎴愬姛鍚庡簲璇ヨ烦杞埌鐧诲綍椤甸潰,鑰屼笉鏄嚜鍔ㄧ櫥褰?
+    console.log('=== Register Response Debug ===')
+    console.log('response.code:', response.code)
+    console.log('response.message:', response.message)
+    console.log('Note: Register endpoint does not return token, user should login after registration')
+    console.log('==================================')
+
+    return response
+  }
+
+  /**
+   * 鍙戦€侀獙璇佺爜
+   */
+  async sendVerificationCode(email: string): Promise<ApiResponse<void>> {
+    const requestData: VerificationRequest = {
+      email: email
+    }
+
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      extraData: JSON.stringify(requestData)
+    }
+
+    // 鍚庣璺緞鏄?/user/send-verification,涓嶆槸 /user/send-code
+    return await this.request<void>('/user/send-verification', options)
+  }
+
+  /**
+   * 鑾峰彇鐢ㄦ埛淇℃伅
+   */
+  async getUserInfo(): Promise<ApiResponse<UserInfo>> {
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET
+    }
+
+    // 鍚庣杩斿洖鐨勫瓧娈靛悕鏄?totalStep, remainingStep (鍗曟暟)
+    // 鍓嶇鏈熸湜鐨勫瓧娈靛悕鏄?totalSteps, remainingSteps (澶嶆暟)
+    // 闇€瑕佸湪鎺ユ敹鍒版暟鎹悗杩涜杞崲
+    interface BackendUserVo {
+      id: number;
+      username: string;
+      email: string;
+      nickname: string;
+      sex?: number;
+      avatar?: string;
+      totalStep: number;        // 鍚庣瀛楁鍚?
+      totalPoints: number;
+      remainingStep: number;    // 鍚庣瀛楁鍚?
+      maxDailySteps?: number;
+      updateTime?: string;
+    }
+
+    const response = await this.request<BackendUserVo>('/user/info', options)
+
+    // 杞崲瀛楁鍚?
+    if (response.code === 1 && response.data) {
+      const userInfo: UserInfo = {
+        id: response.data.id,
+        username: response.data.username,
+        email: response.data.email,
+        nickname: response.data.nickname,
+        sex: response.data.sex,
+        avatar: response.data.avatar,
+        totalSteps: response.data.totalStep,       // 杞崲: totalStep -> totalSteps
+        totalPoints: response.data.totalPoints,
+        remainingSteps: response.data.remainingStep // 杞崲: remainingStep -> remainingSteps
+      }
+
+      return {
+        code: response.code,
+        message: response.message,
+        data: userInfo
+      }
+    }
+
+    // 濡傛灉鍝嶅簲澶辫触锛岃繑鍥為敊璇搷搴?
+    interface ErrorResponse {
+      code: number;
+      message: string;
+      data: undefined;
+    }
+
+    const errorResponse: ErrorResponse = {
+      code: response.code,
+      message: response.message,
+      data: undefined
+    }
+
+    return this.createErrorResponse<UserInfo>(response.code, response.message)
+  }
+
+  /**
+   * 鏇存柊鐢ㄦ埛淇℃伅
+   */
+  async updateUserInfo(userInfo: Partial<UserInfo>): Promise<ApiResponse<UserInfo>> {
+    // 杞崲鍓嶇瀛楁涓哄悗绔瓧娈?
+    interface BackendChangeInfoDto {
+      nickname?: string;
+      sex?: number;
+      avatar?: string;
+    }
+
+    const requestData: BackendChangeInfoDto = {
+      nickname: userInfo.nickname,
+      sex: userInfo.sex,
+      avatar: userInfo.avatar
+    }
+
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.PUT,
+      extraData: JSON.stringify(requestData)
+    }
+
+    return await this.request<UserInfo>('/user', options)
+  }
+
+  /**
+   * 淇敼瀵嗙爜
+   */
+  async updatePassword(oldPassword: string, newPassword: string): Promise<ApiResponse<void>> {
+    interface PasswordUpdateRequest {
+      oldPassword: string;
+      newPassword: string;
+    }
+
+    const requestData: PasswordUpdateRequest = {
+      oldPassword: oldPassword,
+      newPassword: newPassword
+    }
+
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.PUT,
+      extraData: JSON.stringify(requestData)
+    }
+
+    return await this.request<void>('/user/password', options)
+  }
+
+  /**
+   * 涓婁紶姝ユ暟鏁版嵁
+   */
+  async uploadStepData(steps: number, date: string): Promise<ApiResponse<void>> {
+    interface StepUploadData {
+      steps: number;
+      date: string;
+    }
+
+    const requestData: StepUploadData = {
+      steps: steps,
+      date: date
+    }
+
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      extraData: JSON.stringify(requestData)
+    }
+
+    // 鍚庣璺緞鏄?/user/steps/upload
+    return await this.request<void>('/user/steps/upload', options)
+  }
+
+  /**
+   * 鑾峰彇姝ユ暟缁熻
+   */
+  async getStepStatistics(date?: string): Promise<ApiResponse<StepStatistics>> {
+    // 鍚庣璺緞鏄?/user/steps/statistics
+    const endpoint = date ? `/user/steps/statistics?date=${date}` : '/user/steps/statistics'
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET
+    }
+
+    return await this.request<StepStatistics>(endpoint, options)
+  }
+
+  /**
+   * 鑾峰彇鎺掕姒?
+   */
+  async getRankingList(type: 'daily' | 'weekly' | 'monthly'): Promise<ApiResponse<RankingItem[]>> {
+    // 鍚庣璺緞鏄?/user/rankings,鍙傛暟鏄?periodType,涓嶆槸 /ranking/{type}
+    const periodType = type === 'daily' ? 'day' : type === 'weekly' ? 'week' : 'month'
+    const endpoint = `/user/rankings?periodType=${periodType}&pageNum=1&pageSize=100`
+
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET
+    }
+
+    return await this.request<RankingItem[]>(endpoint, options)
+  }
+
+  /**
+   * 姝ユ暟鍏戞崲绉垎
+   */
+  async exchangePoints(steps: number): Promise<ApiResponse<ExchangeResponse>> {
+    const requestData: ExchangeRequest = {
+      steps: steps
+    }
+
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      extraData: JSON.stringify(requestData)
+    }
+
+    // PointsController鍦╩all鏈嶅姟涓?璺緞鏄?/points/exchange
+    return await this.request<ExchangeResponse>('/points/exchange', options)
+  }
+
+  /**
+   * 鑾峰彇绉垎鍏戞崲瑙勫垯
+   */
+  async getPointRules(): Promise<ApiResponse<PointRule[]>> {
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET
+    }
+    return await this.request<PointRule[]>('/points/rules', options)
+  }
+
+  /**
+   * 棰勮鍏戞崲缁撴灉
+   */
+  async previewExchange(steps: number): Promise<ApiResponse<ExchangePreview>> {
+    const requestData: ExchangeRequest = {
+      steps: steps
+    }
+
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      extraData: JSON.stringify(requestData)
+    }
+
+    return await this.request<ExchangePreview>('/points/preview', options)
+  }
+
+  /**
+   * 鑾峰彇鎵€鏈夊厬鎹㈣褰?
+   */
+  async getAllExchangeRecords(): Promise<ApiResponse<ExchangeRecord[]>> {
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET
+    }
+
+    // 鍚庣璺緞鏄?/user/exchange/records
+    return await this.request<ExchangeRecord[]>('/user/exchange/records', options)
+  }
+
+  /**
+   * 鑾峰彇鐢ㄦ埛绉垎 (鏂板)
+   */
+  async getUserPoints(): Promise<ApiResponse<PointsResponse>> {
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET
+    }
+
+    return await this.request<PointsResponse>('/user/points', options)
+  }
+
+  /**
+   * 涓婁紶姝ユ暟锛堝埆鍚嶆柟娉曪紝涓巙ploadStepData淇濇寔涓€鑷达級
+   */
+  async uploadSteps(steps: number, date: string): Promise<ApiResponse<void>> {
+    return this.uploadStepData(steps, date)
+  }
+
+  /**
+   * 鑾峰彇姝ユ暟瓒嬪娍鏁版嵁锛堟暟鎹垎鏋愶級
+   */
+  async getStepTrend(days: number = 7): Promise<ApiResponse<StepRecord[]>> {
+    const endpoint = `/user/steps/trend?days=${days}`
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET
+    }
+    return await this.request<StepRecord[]>(endpoint, options)
+  }
+
+  /**
+   * 鑾峰彇姝ユ暟璁板綍鍒楄〃锛堢敤浜嶳ecordPage锛?
+   */
+  async getStepRecords(pageNum: number = 1, pageSize: number = 20): Promise<ApiResponse<StepRecord[]>> {
+    const endpoint = `/user/steps/records?pageNum=${pageNum}&pageSize=${pageSize}`
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET
+    }
+    return await this.request<StepRecord[]>(endpoint, options)
+  }
+
+  /**
+   * 获取商品列表
+   */
+  async getProducts(): Promise<ApiResponse<ExtendedProduct[]>> {
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET
+    }
+    
+    // 后端路径为 /mall/products
+    return await this.request<ExtendedProduct[]>('/mall/products', options)
+  }
+
+  /**
+   * 鍏戞崲鍟嗗搧
+   */
+  async exchangeProduct(productId: number, points: number): Promise<ApiResponse<ExchangeResponse>> {
+    interface ProductExchangeRequest {
+      productId: number;
+      points: number;
+    }
+
+    const requestData: ProductExchangeRequest = {
+      productId: productId,
+      points: points
+    }
+
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.POST,
+      extraData: JSON.stringify(requestData)
+    }
+
+    // 鍚庣璺緞鏄?/mall/exchange
+    return await this.request<ExchangeResponse>('/mall/exchange', options)
+  }
+
+  /**
+   * 鑾峰彇鍏戞崲璁板綍鍒楄〃锛堝寘鍚鏁拌褰曞拰绉垎鍏戞崲璁板綍锛?
+   */
+  async getExchangeRecords(pageNum: number = 1, pageSize: number = 20): Promise<ApiResponse<ExchangeRecord[]>> {
+    const endpoint = `/user/exchange/records?pageNum=${pageNum}&pageSize=${pageSize}`
+    const options: http.HttpRequestOptions = {
+      method: http.RequestMethod.GET
+    }
+    return await this.request<ExchangeRecord[]>(endpoint, options)
+  }
+
+  /**
+   * 鑾峰彇妯℃嫙鏁版嵁锛堝紑鍙戞祴璇曠敤锛?
+   */
+  private getMockResponse<T>(endpoint: string): ApiResponse<T> {
+    console.log('Using mock data for:', endpoint)
+
+    // 涓簃ock鏁版嵁鍒涘缓鏄惧紡绫诲瀷
+    interface MockLoginResponse {
+      token: string;
+      userInfo: UserInfo;
+      expiresIn: number;
+    }
+
+    // 鍒涘缓mock鐢ㄦ埛淇℃伅
+    const mockUserInfo: UserInfo = {
+      id: 123,
+      username: 'testuser',
+      email: 'test@example.com',
+      nickname: '娴嬭瘯鐢ㄦ埛',
+      totalSteps: 15000,
+      totalPoints: 150,
+      remainingSteps: 8500
+    }
+
+    const newUserInfo: UserInfo = {
+      id: 123,
+      username: 'newuser',
+      email: 'new@example.com',
+      nickname: '鏂扮敤鎴?,
+      totalSteps: 0,
+      totalPoints: 0,
+      remainingSteps: 0
+    }
+
+    const mockLoginResponse: MockLoginResponse = {
+      token: 'mock-jwt-token-123456',
+      userInfo: mockUserInfo,
+      expiresIn: 7200
+    }
+
+    const newUserLoginResponse: MockLoginResponse = {
+      token: 'mock-jwt-token-123456',
+      userInfo: newUserInfo,
+      expiresIn: 7200
+    }
+
+    // 鏍规嵁涓嶅悓鐨勭鐐硅繑鍥炰笉鍚岀殑妯℃嫙鏁版嵁
+    const mockResponses: Record<string, ApiResponse<MockLoginResponse | UserInfo | void>> = {
+      '/user/login': {
+        code: 1,
+        message: '鐧诲綍鎴愬姛',
+        data: mockLoginResponse
+      },
+      '/user/register': {
+        code: 1,
+        message: '娉ㄥ唽鎴愬姛',
+        data: newUserLoginResponse
+      },
+      '/user/send-verification': {
+        code: 1,
+        message: '楠岃瘉鐮佸彂閫佹垚鍔?,
+        data: undefined
+      },
+      '/user': {
+        code: 1,
+        message: '鑾峰彇鎴愬姛',
+        data: mockUserInfo
+      }
+    }
+
+    // 榛樿鍝嶅簲
+    const defaultResponse: ApiResponse<T> = {
+      code: 1,
+      message: 'Mock response',
+      data: undefined
+    } as ApiResponse<T>
+
+    // 鑾峰彇鍝嶅簲鏁版嵁 - 浣跨敤绫诲瀷瀹夊叏鐨勮闂?
+    const response: ApiResponse<MockLoginResponse | UserInfo | void> | undefined = mockResponses[endpoint]
+    if (response) {
+      return response as ApiResponse<T>
+    }
+
+    return defaultResponse
+  }
+}
+
+// 鍒涘缓 API 瀹㈡埛绔疄渚?
+export const ApiClient = ApiClientImpl.getInstance()
+
+// 瀵煎嚭榛樿瀹炰緥
+export default ApiClient
+

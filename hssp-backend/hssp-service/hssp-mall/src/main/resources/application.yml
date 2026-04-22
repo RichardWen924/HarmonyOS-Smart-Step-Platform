@@ -1,6 +1,4 @@
 spring:
-  profiles:
-    active: dev
   application:
     name: hssp-mall
   datasource:
@@ -12,7 +10,7 @@ spring:
   redis:
     host: ${hssp.redis.host:localhost}
     port: ${hssp.redis.port:6379}
-    password: ${hssp.redis.pw:123456}
+    password: ${hssp.redis.pw}
     database: 0
     lettuce:
       pool:

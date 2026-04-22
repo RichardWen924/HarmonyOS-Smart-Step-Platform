@@ -1,0 +1,15 @@
+{
+  "src": [
+    "pages/Index",
+    "pages/LoginPage",
+    "pages/MainPage",
+    "pages/TrendPage",
+    "pages/RecordPage",
+    "pages/RankingPage",
+    "pages/MallPage",
+    "pages/ProfilePage",
+    "pages/PointsExchangePage",
+    "pages/AnalysisPage",
+    "pages/TestBackendPage"
+  ]
+}
